@@ -1,0 +1,4 @@
+#Wed May 31 11:37:58 SGT 2017
+base.0=/Users/Amy/Downloads/BoofOpenCv-master/app/build/intermediates/transforms/dex/debug/folders/1000/5/slice_0
+renamed.0=classes.dex
+file.0=/Users/Amy/Downloads/BoofOpenCv-master/app/build/intermediates/transforms/dex/debug/folders/1000/5/slice_0/classes.dex
