@@ -1,0 +1,139 @@
+-- Merging decision tree log ---
+manifest
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:2:1-51:12
+	package
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:3:5-33
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+	android:versionName
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:2:11-69
+	android:versionCode
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+uses-permission#android.permission.CAMERA
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:5:5-65
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:5:22-62
+uses-permission#android.permission.INTERNET
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:6:5-66
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:6:22-64
+uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:7:5-80
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:7:22-78
+uses-permission#android.permission.BLUETOOTH_ADMIN
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:8:5-73
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:8:22-71
+uses-permission#android.permission.BLUETOOTH
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:9:5-67
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:9:22-65
+uses-feature#android.hardware.camera
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:11:5-13:36
+	android:required
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:13:9-33
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:12:9-47
+uses-feature#android.hardware.camera.autofocus
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:14:5-16:36
+	android:required
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:16:9-33
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:15:9-57
+supports-screens
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:18:5-23:40
+	android:largeScreens
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:20:9-36
+	android:smallScreens
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:22:9-36
+	android:normalScreens
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:21:9-37
+	android:xlargeScreens
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:23:9-37
+	android:anyDensity
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:19:9-34
+application
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:25:5-49:19
+MERGED from [com.android.support:appcompat-v7:25.1.0] C:\Users\Nayr\.android\build-cache\7b6933b16b6fe8c76168c196e60ba7afead96622\output\AndroidManifest.xml:25:5-20
+MERGED from [com.android.support:animated-vector-drawable:25.1.0] C:\Users\Nayr\.android\build-cache\2f459480a940a2c3a0dc5449336fe1b1764dd94d\output\AndroidManifest.xml:22:5-20
+MERGED from [com.android.support:support-vector-drawable:25.1.0] C:\Users\Nayr\.android\build-cache\40f8eb8dec946c3b117a2d07417d0872235f31ae\output\AndroidManifest.xml:23:5-20
+MERGED from [com.google.android.gms:play-services-appindexing:8.4.0] C:\Users\Nayr\.android\build-cache\0953d93e482a71aa527408564a1c17f7fb244132\output\AndroidManifest.xml:19:5-20
+MERGED from [com.google.android.gms:play-services-basement:8.4.0] C:\Users\Nayr\.android\build-cache\db7505f3d132c54aa5965fd81afcacd674b9ecff\output\AndroidManifest.xml:20:5-24:19
+MERGED from [com.android.support:support-v4:25.1.0] C:\Users\Nayr\.android\build-cache\d80731631b54490600708e52a1dff77754af4d3f\output\AndroidManifest.xml:25:5-20
+MERGED from [com.android.support:support-fragment:25.1.0] C:\Users\Nayr\.android\build-cache\c37ab02a2df618040a79ddb7777c292d7327b77e\output\AndroidManifest.xml:25:5-20
+MERGED from [com.android.support:support-media-compat:25.1.0] C:\Users\Nayr\.android\build-cache\cbb6fb1c52185263f48fa015b4463f7705f85732\output\AndroidManifest.xml:25:5-20
+MERGED from [com.android.support:support-core-ui:25.1.0] C:\Users\Nayr\.android\build-cache\2976cbf714826606e5cb6d5ab6bb1787e1fc7f51\output\AndroidManifest.xml:25:5-20
+MERGED from [com.android.support:support-core-utils:25.1.0] C:\Users\Nayr\.android\build-cache\071e1ab4db9b90985f7ea9e41e5069a97514169b\output\AndroidManifest.xml:25:5-20
+MERGED from [com.android.support:support-compat:25.1.0] C:\Users\Nayr\.android\build-cache\82789621c81fe633186dbfdb04dd9f023dfb338b\output\AndroidManifest.xml:25:5-20
+	android:label
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:28:9-41
+	android:allowBackup
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:26:9-35
+	android:icon
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:27:9-45
+	android:largeHeap
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:31:9-33
+	android:theme
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:29:9-40
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:30:9-68
+activity#org.boofcv.android.localization.DeviceList
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:33:9-41:20
+	android:screenOrientation
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:35:13-50
+	android:label
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:36:13-45
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:34:13-52
+intent-filter#android.intent.action.MAIN+android.intent.category.LAUNCHER
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:37:13-40:29
+action#android.intent.action.MAIN
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:38:17-69
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:38:25-66
+category#android.intent.category.LAUNCHER
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:39:17-77
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:39:27-74
+activity#org.boofcv.android.localization.BoxDetectorActivity
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:42:9-45:20
+	android:label
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:44:13-40
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:43:13-61
+meta-data#com.google.android.gms.version
+ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:46:9-48:69
+MERGED from [com.google.android.gms:play-services-basement:8.4.0] C:\Users\Nayr\.android\build-cache\db7505f3d132c54aa5965fd81afcacd674b9ecff\output\AndroidManifest.xml:21:9-23:69
+	android:value
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:48:13-66
+	android:name
+		ADDED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml:47:13-58
+uses-sdk
+INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+MERGED from [com.android.support:multidex:1.0.1] C:\Users\Nayr\.android\build-cache\fbd432e32b9f073a1d4aff425f704981bca27148\output\AndroidManifest.xml:18:5-42
+MERGED from [com.android.support:appcompat-v7:25.1.0] C:\Users\Nayr\.android\build-cache\7b6933b16b6fe8c76168c196e60ba7afead96622\output\AndroidManifest.xml:21:5-23:78
+MERGED from [com.android.support:animated-vector-drawable:25.1.0] C:\Users\Nayr\.android\build-cache\2f459480a940a2c3a0dc5449336fe1b1764dd94d\output\AndroidManifest.xml:20:5-44
+MERGED from [com.android.support:support-vector-drawable:25.1.0] C:\Users\Nayr\.android\build-cache\40f8eb8dec946c3b117a2d07417d0872235f31ae\output\AndroidManifest.xml:21:5-43
+MERGED from [com.google.android.gms:play-services-appindexing:8.4.0] C:\Users\Nayr\.android\build-cache\0953d93e482a71aa527408564a1c17f7fb244132\output\AndroidManifest.xml:18:5-42
+MERGED from [com.google.android.gms:play-services-base:8.4.0] C:\Users\Nayr\.android\build-cache\77c5a38c0a49b94a1af742a599d1b5d90e239358\output\AndroidManifest.xml:18:5-42
+MERGED from [com.google.android.gms:play-services-basement:8.4.0] C:\Users\Nayr\.android\build-cache\db7505f3d132c54aa5965fd81afcacd674b9ecff\output\AndroidManifest.xml:18:5-42
+MERGED from [com.android.support:support-v4:25.1.0] C:\Users\Nayr\.android\build-cache\d80731631b54490600708e52a1dff77754af4d3f\output\AndroidManifest.xml:21:5-23:54
+MERGED from [com.android.support:support-fragment:25.1.0] C:\Users\Nayr\.android\build-cache\c37ab02a2df618040a79ddb7777c292d7327b77e\output\AndroidManifest.xml:21:5-23:60
+MERGED from [com.android.support:support-media-compat:25.1.0] C:\Users\Nayr\.android\build-cache\cbb6fb1c52185263f48fa015b4463f7705f85732\output\AndroidManifest.xml:21:5-23:63
+MERGED from [com.android.support:support-core-ui:25.1.0] C:\Users\Nayr\.android\build-cache\2976cbf714826606e5cb6d5ab6bb1787e1fc7f51\output\AndroidManifest.xml:21:5-23:58
+MERGED from [com.android.support:support-core-utils:25.1.0] C:\Users\Nayr\.android\build-cache\071e1ab4db9b90985f7ea9e41e5069a97514169b\output\AndroidManifest.xml:21:5-23:61
+MERGED from [com.android.support:support-compat:25.1.0] C:\Users\Nayr\.android\build-cache\82789621c81fe633186dbfdb04dd9f023dfb338b\output\AndroidManifest.xml:21:5-23:58
+MERGED from [SmartWareouse:openCVLibrary310:unspecified] C:\Users\Nayr\Documents\SmartWareouse\openCVLibrary310\build\intermediates\bundles\default\AndroidManifest.xml:7:5-9:41
+	tools:overrideLibrary
+		ADDED from [com.android.support:appcompat-v7:25.1.0] C:\Users\Nayr\.android\build-cache\7b6933b16b6fe8c76168c196e60ba7afead96622\output\AndroidManifest.xml:23:9-75
+	android:targetSdkVersion
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\Nayr\Documents\SmartWareouse\app\src\main\AndroidManifest.xml

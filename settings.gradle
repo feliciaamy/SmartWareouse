@@ -1,2 +1,2 @@
-include ':app', ':commons-io-2.2', ':httpmime-4.2.1'
+include ':app'
 include ':openCVLibrary310'
