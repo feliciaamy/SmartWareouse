@@ -22,7 +22,7 @@ import java.util.List;
 
 public class ColorBlobDetector {
     // Colours
-    private final static Scalar LOWERTHRESHOLD = new Scalar(115, 100, 25); // Dull Red color – lower hsv values
+    private final static Scalar LOWERTHRESHOLD = new Scalar(110, 100, 100); // Dull Red color – lower hsv values
     private final static Scalar UPPERTHRESHOLD = new Scalar(120, 255, 255); // Dull Red color – higher hsv values
 
     // Mats
@@ -37,7 +37,9 @@ public class ColorBlobDetector {
     private static List<Dimension> foundMarkers = new ArrayList<Dimension>();
     private static List<Dimension> boundaries = new ArrayList<Dimension>();
     private static List<Double> heights = new ArrayList<Double>();
-    private static List<Dimension> binLabels = new ArrayList<Dimension>();
+    private static List<Dimension> bottomMarkers = new ArrayList<Dimension>();
+
+    private static Dimension bottomBoundary;
 
     // Colors
     private static final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};
@@ -89,7 +91,7 @@ public class ColorBlobDetector {
                 if (Math.abs(detected.get(i).y - height) > 300) {
                     boundaries.add(new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN));
                     heights.add(tempSum / tempCount);
-                    binLabels.clear();
+                    bottomMarkers.clear();
                     maxX = minX = detected.get(i).x;
                     tempSum = 0;
                     tempCount = 0;
@@ -104,13 +106,14 @@ public class ColorBlobDetector {
             }
 
             height = detected.get(i).y;
-            binLabels.add(new Dimension(detected.get(i).x, detected.get(i).y, 50, colors[c]));
+            bottomMarkers.add(new Dimension(detected.get(i).x, detected.get(i).y, 50, colors[c]));
             foundMarkers.add(new Dimension(detected.get(i).x, detected.get(i).y, 50, colors[c]));
             tempCount++;
             tempSum += height;
         }
+        bottomBoundary = new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, colors[c]);
+        boundaries.add(bottomBoundary);
 
-        boundaries.add(new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, colors[c]));
         heights.add(tempSum / tempCount);
 
         // Last set of markers are the lowest
@@ -122,6 +125,10 @@ public class ColorBlobDetector {
         }
     }
 
+    public static Dimension getBottomBoundary() {
+        return bottomBoundary;
+    }
+
     public static List<Dimension> getMarkers() {
         return foundMarkers;
     }
@@ -131,31 +138,27 @@ public class ColorBlobDetector {
     }
 
     public static List<Dimension> getBinLabels() {
-        Collections.sort(binLabels, new Comparator<Dimension>() {
+        Collections.sort(bottomMarkers, new Comparator<Dimension>() {
             public int compare(Dimension d1, Dimension d2) {
                 return Double.compare(d2.x, d1.x);
             }
         });
-        for (Dimension d : binLabels) {
+        for (Dimension d : bottomMarkers) {
             Log.d("Sorted Bin Labels", d.toString());
         }
-        return binLabels;
+        return bottomMarkers;
     }
 
     private static void filtering() {
         Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
-        Imgproc.erode(mDilatedMat, mDilatedMat, new Mat());
-        Imgproc.erode(mDilatedMat, mDilatedMat, new Mat());
-        Imgproc.dilate(mDilatedMat, mDilatedMat, new Mat());
-        Imgproc.dilate(mDilatedMat, mDilatedMat, new Mat());
-        Imgproc.dilate(mDilatedMat, mDilatedMat, new Mat());
-        Imgproc.dilate(mDilatedMat, mDilatedMat, new Mat());
+        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
+        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
     }
 
     private void clear() {
         foundMarkers = new ArrayList<Dimension>();
         boundaries = new ArrayList<Dimension>();
         heights = new ArrayList<Double>();
-        binLabels = new ArrayList<Dimension>();
+        bottomMarkers = new ArrayList<Dimension>();
     }
 }

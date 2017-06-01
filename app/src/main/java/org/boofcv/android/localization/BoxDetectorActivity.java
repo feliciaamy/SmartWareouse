@@ -63,6 +63,16 @@ import static android.content.ContentValues.TAG;
  */
 
 public class BoxDetectorActivity extends Activity {
+
+    //Bluetooth Functions
+    String address = null;
+    private ProgressDialog progress;
+    BluetoothAdapter myBluetooth = null;
+    BluetoothSocket btSocket = null;
+    private boolean isBtConnected = false;
+    //SPP UUID. Look for it
+    static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
     private boolean safeToTakePicture = false;
@@ -290,17 +300,19 @@ public class BoxDetectorActivity extends Activity {
                 colorBlobDetector.findMarkers();
                 List<Dimension> foundMarkers = colorBlobDetector.getMarkers();
                 List<Dimension> boundaries = colorBlobDetector.getBoundaries();
+                Dimension bottomBoundary = colorBlobDetector.getBottomBoundary();
 
                 // Bin Label Detection
                 BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
                 binLabelDetector.findPotentialLabels();
-                List<Dimension> potentialLabels = binLabelDetector.getPotentialLabels();
+                List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary);
+                List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(bottomBoundary);
 
                 // Labels Detection
                 LabelDetector labelDetector = new LabelDetector(ImageMat);
                 labelDetector.findLabels();
                 List<Dimension> labels = labelDetector.getLabels();
-                List<Dimension> centroids = labelDetector.getCentroids();
+                List<Dimension> boxCentroids = labelDetector.getCentroids();
                 // Template Matching
 //                List<Dimension> boxes = Localization.runTemplateMatching(baseImg);
 //
@@ -331,32 +343,40 @@ public class BoxDetectorActivity extends Activity {
                     Log.d("Dimension", d.toString());
                     paint.setColor(d.color);
                     if (d.orientation == Orientation.HORIZONTAL) {
-//                        cnvs.drawText(d.start + ", " + d.end, (float) ((d.start / d.end) + d.start), (float) d.center + 50, paint);
                         cnvs.drawLine((float) d.start, (float) d.center, (float) d.end, (float) d.center, paint);
                     } else if (d.orientation == Orientation.VERTICAL) {
-//                        cnvs.drawText(d.start + ", " + d.end, (float) d.center + 50, (float) ((d.start / d.end) + d.start), paint);
                         cnvs.drawLine((float) d.center, (float) d.start, (float) d.center, (float) d.end, paint);
                     }
                 }
                 paint.setStyle(Paint.Style.STROKE);
-                // Drawing Potential Labels
-                for (Dimension d : potentialLabels) {
+                // Drawing Bin Labels
+                for (Dimension d : binLabels) {
                     paint.setColor(d.color);
                     cnvs.drawRect((float) d.left, (float) d.top, (float) d.right, (float) d.bottom, paint);
                 }
-
-                // Drawing Labels and Centroids
+                // Drawing Boxes' Labels
                 for (Dimension d : labels) {
                     paint.setColor(d.color);
                     cnvs.drawRect((float) d.left, (float) d.top, (float) d.right, (float) d.bottom, paint);
                 }
-
+                // Drawing centroids
+                String data = "";
                 paint.setStyle(Paint.Style.FILL);
-                for (Dimension d : centroids) {
+                for (Dimension d : boxCentroids) {
                     paint.setColor(d.color);
                     cnvs.drawCircle((float) d.x, (float) d.y, (float) d.r, paint);
+                    data = data + d.x + "," + d.y + ";";
                 }
+
+                for (Dimension d : binLabelCentroids) {
+                    paint.setColor(d.color);
+                    cnvs.drawCircle((float) d.x, (float) d.y, (float) d.r, paint);
+                    data = data + d.x + "," + d.y + ";";
+                }
+
+                Log.d("Data", data);
                 mImageView.setImageBitmap(myBitmap32);
+                sendCoor(data);
             }
         }
     }
@@ -412,64 +432,43 @@ public class BoxDetectorActivity extends Activity {
     }
 
     //Bluetooth Functions
-    String address = null;
-    private ProgressDialog progress;
-    BluetoothAdapter myBluetooth = null;
-    BluetoothSocket btSocket = null;
-    private boolean isBtConnected = false;
-    //SPP UUID. Look for it
-    static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-
-    private void Disconnect()
-    {
-        if (btSocket!=null) //If the btSocket is busy
+    private void Disconnect() {
+        if (btSocket != null) //If the btSocket is busy
         {
-            try
-            {
+            try {
                 btSocket.close(); //close connection
+            } catch (IOException e) {
+                msg("Error");
             }
-            catch (IOException e)
-            { msg("Error");}
         }
         finish(); //return to the first layout
 
     }
 
-    private void turnOffLed()
-    {
-        if (btSocket!=null)
-        {
-            try
-            {
+    private void turnOffLed() {
+        if (btSocket != null) {
+            try {
                 btSocket.getOutputStream().write("O".toString().getBytes());
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 msg("Error");
             }
         }
     }
 
-    private void turnOnLed()
-    {
-        if (btSocket!=null)
-        {
-            try
-            {
-                btSocket.getOutputStream().write("T".toString().getBytes());
+    private void sendCoor(String data) {
+        if (btSocket != null) {
+            try {
+                btSocket.getOutputStream().write(data.toString().getBytes());
                 Log.d("debug", "message send");
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 msg("Error");
             }
         }
     }
 
     // fast way to call Toast
-    private void msg(String s)
-    {
-        Toast.makeText(getApplicationContext(),s,Toast.LENGTH_LONG).show();
+    private void msg(String s) {
+        Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG).show();
     }
 
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
@@ -477,43 +476,36 @@ public class BoxDetectorActivity extends Activity {
         private boolean ConnectSuccess = true; //if it's here, it's almost connected
 
         @Override
-        protected void onPreExecute()
-        {
+        protected void onPreExecute() {
             progress = ProgressDialog.show(BoxDetectorActivity.this, "Connecting...", "Please wait!!!");  //show a progress dialog
         }
 
         @Override
         protected Void doInBackground(Void... devices) //while the progress dialog is shown, the connection is done in background
         {
-            try
-            {
-                if (btSocket == null || !isBtConnected)
-                {
+            try {
+                if (btSocket == null || !isBtConnected) {
                     myBluetooth = BluetoothAdapter.getDefaultAdapter();//get the mobile bluetooth device
                     BluetoothDevice dispositivo = myBluetooth.getRemoteDevice(address);//connects to the device's address and checks if it's available
                     btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
                     BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
                     btSocket.connect();//start connection
                 }
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 ConnectSuccess = false;//if the try failed, you can check the exception here
             }
             return null;
         }
+
         @Override
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
 
-            if (!ConnectSuccess)
-            {
+            if (!ConnectSuccess) {
                 msg("Connection Failed. Is it a SPP Bluetooth? Try again.");
                 finish();
-            }
-            else
-            {
+            } else {
                 msg("Connected.");
                 isBtConnected = true;
             }

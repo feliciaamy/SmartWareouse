@@ -5,14 +5,12 @@ android/support/v4/view/ViewCompat$ScrollIndicators.class
 android/support/v7/view/menu/MenuView.class
 android/support/v7/view/menu/SubMenuBuilder.class
 android/support/v4/media/session/PlaybackStateCompat$1.class
-com/thoughtworks/xstream/annotations/AnnotationReflectionConverter.class
 android/support/annotation/VisibleForTesting.class
 com/google/android/gms/auth/firstparty/shared/zzd.class
 android/support/v7/appcompat/R$layout.class
 android/support/v4/view/ViewCompatLollipop.class
 android/support/v4/media/MediaBrowserCompat$MediaItem$1.class
 android/support/v4/widget/CursorAdapter.class
-boofcv/alg/distort/DistortImageOps.class
 android/support/v4/widget/SimpleCursorAdapter.class
 android/support/v4/view/MenuCompat.class
 android/support/v4/view/ViewCompat$JbMr1ViewCompatImpl.class
@@ -31,7 +29,6 @@ android/support/v4/media/VolumeProviderCompat.class
 android/support/v4/view/ViewCompat$ICSViewCompatImpl.class
 android/support/annotation/AnimRes.class
 android/support/v4/view/KeyEventCompat.class
-org/apache/commons/compress/archivers/jar/JarArchiveEntry.class
 android/support/v4/view/ViewPropertyAnimatorCompat.class
 android/support/v4/text/util/LinkifyCompat$LinkSpec.class
 android/support/v7/widget/MenuItemHoverListener.class
@@ -41,7 +38,6 @@ android/support/v4/net/ConnectivityManagerCompat$HoneycombMR2ConnectivityManager
 android/support/multidex/MultiDexExtractor.class
 android/support/v4/media/MediaBrowserCompat$Subscription.class
 android/support/v4/view/ViewPager$PagerObserver.class
-com/thoughtworks/xstream/annotations/XStreamAsAttribute.class
 android/support/v4/view/PagerAdapter.class
 android/support/v7/view/menu/MenuBuilder$Callback.class
 com/google/android/gms/common/zze.class
@@ -51,7 +47,6 @@ android/support/v4/view/ViewPager$3.class
 android/support/v7/view/menu/MenuItemImpl.class
 android/support/v4/net/ConnectivityManagerCompatHoneycombMR2.class
 android/support/v4/widget/MaterialProgressDrawable$2.class
-org/apache/commons/compress/archivers/ArchiveInputStream.class
 android/support/annotation/AnimatorRes.class
 android/support/v7/widget/MenuPopupWindow.class
 android/support/v7/app/ActionBar$Tab.class
@@ -64,11 +59,9 @@ android/support/v4/media/MediaMetadataCompat.class
 android/support/v4/widget/MaterialProgressDrawable.class
 android/support/v4/view/PagerTitleStrip.class
 android/support/v4/media/MediaBrowserCompat$MediaBrowserImplApi21.class
-com/thoughtworks/xstream/annotations/XStreamConverters.class
 android/support/v4/app/ActionBarDrawerToggle.class
 android/support/v4/media/MediaBrowserCompat$ConnectionCallback.class
 android/support/v4/media/MediaDescriptionCompat$Builder.class
-com/thoughtworks/xstream/mapper/AnnotationMapper.class
 com/google/android/gms/common/SignInButton$ColorScheme.class
 android/support/v4/media/MediaMetadataCompat$Builder.class
 android/support/v7/app/ActionBarDrawerToggle$Delegate.class
@@ -86,7 +79,6 @@ android/support/v4/app/FragmentTabHost.class
 android/support/annotation/IntegerRes.class
 android/support/v4/util/ArrayMap.class
 android/support/v4/view/ViewPager$OnPageChangeListener.class
-com/google/protobuf/CodedInputStream.class
 android/support/annotation/RequiresPermission$Write.class
 android/support/v4/widget/MaterialProgressDrawable$ProgressDrawableSize.class
 android/support/v4/view/PointerIconCompat.class
@@ -117,7 +109,6 @@ android/support/v7/app/ActionBar$OnNavigationListener.class
 android/support/v4/view/ViewCompatBase.class
 android/support/v7/appcompat/R$attr.class
 android/support/v4/view/accessibility/AccessibilityNodeProviderCompat.class
-com/thoughtworks/xstream/annotations/XStreamContainedType.class
 android/support/v7/app/ActionBar$TabListener.class
 android/support/v4/view/accessibility/AccessibilityEventCompat.class
 android/support/v7/appcompat/R.class
@@ -134,7 +125,6 @@ android/support/v7/view/ActionMode.class
 com/google/android/gms/clearcut/zzb.class
 android/support/annotation/Nullable.class
 android/support/v4/media/VolumeProviderCompatApi21.class
-com/google/protobuf/CodedOutputStream.class
 android/support/v4/view/ViewCompat$ViewCompatImpl.class
 android/support/v4/net/ConnectivityManagerCompat.class
 android/support/v7/app/AppCompatDelegateImplV23.class
@@ -148,18 +138,15 @@ android/support/v7/app/AppCompatCallback.class
 com/google/android/gms/playlog/internal/PlayLoggerContext.class
 com/google/android/gms/common/SignInButton$ButtonSize.class
 android/support/v4/widget/EdgeEffectCompat.class
-com/thoughtworks/xstream/annotations/Annotations.class
 android/support/v4/view/animation/FastOutSlowInInterpolator.class
 android/support/v7/widget/ListPopupWindow.class
 android/support/v7/view/menu/MenuPresenter$Callback.class
 android/support/v4/widget/MaterialProgressDrawable$Ring.class
 android/support/v4/widget/SlidingPaneLayout.class
 android/support/v4/text/util/LinkifyCompat.class
-com/thoughtworks/xstream/annotations/AnnotationProvider.class
 com/google/android/gms/common/SignInButton.class
 android/support/v4/media/MediaMetadataCompat$TextKey.class
 com/google/android/gms/common/api/internal/zzv.class
-org/apache/commons/compress/archivers/ArchiveOutputStream.class
 android/support/v4/media/VolumeProviderCompatApi21$Delegate.class
 android/support/v4/text/util/LinkifyCompat$1.class
 android/support/v4/media/session/PlaybackStateCompat.class
@@ -177,7 +164,6 @@ android/support/v4/media/MediaMetadataCompat$RatingKey.class
 android/support/v7/view/menu/CascadingMenuPopup$HorizPosition.class
 com/google/android/gms/common/data/DataBuffer.class
 android/support/v4/view/ViewPager$SavedState.class
-org/apache/commons/compress/archivers/sevenz/SevenZArchiveEntry.class
 android/support/v4/internal/view/SupportMenuItem.class
 android/support/v4/media/session/MediaSessionCompat$MediaSessionImplApi21.class
 android/support/v4/os/BuildCompat.class
@@ -233,7 +219,6 @@ android/support/v4/view/ViewCompatICSMr1.class
 android/support/v4/view/animation/LookupTableInterpolator.class
 android/support/v4/view/ViewCompat$FocusDirection.class
 android/support/v7/appcompat/R$styleable.class
-org/apache/commons/compress/archivers/zip/ZipArchiveOutputStream.class
 android/support/v7/appcompat/R$dimen.class
 android/support/v4/app/FragmentManager.class
 android/support/v7/widget/Toolbar.class
@@ -261,7 +246,6 @@ android/support/v4/view/ViewCompatJellybeanMr2.class
 android/support/v4/view/ViewCompat$ICSMr1ViewCompatImpl.class
 android/support/v4/app/NotificationCompat$Builder.class
 android/support/annotation/IntRange.class
-com/thoughtworks/xstream/annotations/XStreamConverter.class
 android/support/v4/net/ConnectivityManagerCompat$RestrictBackgroundStatus.class
 android/support/v4/content/PermissionChecker.class
 android/support/v7/widget/ViewUtils.class
@@ -275,7 +259,6 @@ android/support/v4/media/MediaBrowserCompat$ItemCallback.class
 android/support/v4/widget/SearchViewCompat$OnCloseListenerCompat.class
 android/support/annotation/ColorRes.class
 android/support/v7/view/menu/CascadingMenuPopup$CascadingMenuInfo.class
-org/apache/commons/compress/compressors/CompressorInputStream.class
 android/support/v4/media/session/PlaybackStateCompat$CustomAction.class
 android/support/v4/view/ViewPager$ViewPositionComparator.class
 android/support/v4/media/MediaBrowserCompat$MediaItem$Flags.class
@@ -297,10 +280,8 @@ android/support/v4/util/ContainerHelpers.class
 android/support/multidex/MultiDex$V14.class
 android/support/annotation/NonNull.class
 android/support/v4/media/session/MediaSessionCompat$MediaSessionImpl.class
-com/thoughtworks/xstream/annotations/XStreamAliasType.class
 android/support/v4/os/ResultReceiver.class
 android/support/annotation/UiThread.class
-org/apache/commons/compress/archivers/tar/TarArchiveOutputStream.class
 android/support/v4/widget/DrawerLayout$DrawerListener.class
 android/support/v4/view/accessibility/AccessibilityManagerCompat$AccessibilityStateChangeListenerCompat.class
 android/support/v7/widget/ActionMenuView$LayoutParams.class
@@ -308,7 +289,6 @@ android/support/v4/media/MediaDescriptionCompat.class
 android/support/v4/media/session/MediaSessionCompat$QueueItem.class
 android/support/v4/net/ConnectivityManagerCompatJellyBean.class
 android/support/v4/app/ServiceCompat$ServiceCompatImpl.class
-org/apache/commons/compress/archivers/dump/DumpArchiveInputStream.class
 android/support/annotation/RestrictTo$Scope.class
 android/support/v7/app/AppCompatDelegate$NightMode.class
 android/support/v4/media/MediaBrowserCompat$MediaBrowserImplBase.class
@@ -316,7 +296,6 @@ com/google/android/gms/common/internal/ValidateAccountRequest.class
 android/support/v4/view/ViewPager$DecorView.class
 android/support/v4/app/ServiceCompat$BaseServiceCompatImpl.class
 android/support/v7/widget/TintTypedArray.class
-com/thoughtworks/xstream/annotations/XStreamOmitField.class
 android/support/v4/media/MediaBrowserCompat$ConnectionCallback$ConnectionCallbackInternal.class
 android/support/v4/view/VelocityTrackerCompat.class
 android/support/v4/media/VolumeProviderCompat$1.class
@@ -332,11 +311,8 @@ android/support/v4/media/MediaBrowserCompat$MediaBrowserServiceCallbackImpl.clas
 android/support/annotation/DrawableRes.class
 android/support/v4/media/session/MediaSessionCompat$OnActiveChangeListener.class
 android/support/v4/media/MediaMetadataCompat$BitmapKey.class
-com/thoughtworks/xstream/mapper/EnumMapper.class
-com/thoughtworks/xstream/annotations/XStreamAlias.class
 android/support/v4/util/MapCollections.class
 android/support/v4/graphics/drawable/DrawableCompat.class
-com/thoughtworks/xstream/annotations/XStreamImplicitCollection.class
 android/support/multidex/ZipUtil$CentralDirectory.class
 android/support/v7/view/menu/MenuPopup.class
 android/support/v7/app/ActionBarDrawerToggle.class
@@ -359,11 +335,9 @@ android/support/v4/net/ConnectivityManagerCompat$Api24ConnectivityManagerCompatI
 android/support/v4/media/RatingCompatKitkat.class
 com/google/android/gms/auth/zzd.class
 android/support/v4/media/VolumeProviderCompat$Callback.class
-android/support/v4/app/NotificationCompat.class
 com/google/android/gms/common/api/CommonStatusCodes.class
-com/thoughtworks/xstream/annotations/XStreamImplicit.class
+android/support/v4/app/NotificationCompat.class
 android/support/v4/media/session/MediaSessionCompat.class
-com/thoughtworks/xstream/annotations/XStreamInclude.class
 android/support/v4/media/MediaBrowserCompat$SubscriptionCallback.class
 android/support/v7/view/menu/MenuPresenter.class
 android/support/v4/media/RatingCompat$Style.class

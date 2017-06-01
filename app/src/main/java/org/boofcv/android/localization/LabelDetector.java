@@ -56,7 +56,6 @@ public class LabelDetector {
                     centroid.x = moments.get_m10() / moments.get_m00();
                     centroid.y = moments.get_m01() / moments.get_m00();
                     centroids.add(new Dimension(centroid.x, centroid.y, 20, Color.BLACK));
-//                    ratio.add(ratiod);
                     Log.d("(Drawn) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
                 } else {
                     Log.d("Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
