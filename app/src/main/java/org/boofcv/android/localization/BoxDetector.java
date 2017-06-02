@@ -47,7 +47,7 @@ public class BoxDetector {
                 Rect rect = Imgproc.boundingRect(coordinates.get(i));
 
                 float ratiod = ((float) rect.height / (float) rect.width);
-                if (0 < ratiod && ratiod < 0.6) {
+                if (0 < ratiod && ratiod < 0.55) {
                     // Drawing of rectangle
                     boxes.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.GREEN));
                     Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
