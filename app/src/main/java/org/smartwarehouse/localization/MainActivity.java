@@ -17,6 +17,7 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
+import org.apache.commons.io.IOUtils;
 import org.smartwarehouse.R;
 import org.smartwarehouse.scanner.BarcodeScanner;
 import org.opencv.android.BaseLoaderCallback;
@@ -29,6 +30,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -294,10 +297,18 @@ public class MainActivity extends Activity {
     private void readBarcodes() {
         if (!coordinates.isEmpty()) {
             currentCoor = coordinates.get(0);
+            // Format: X,Y  |   SEND TO ARDUINO
+            sendCoor(currentCoor.toString());
+            Log.e("debuga", "Sent " + currentCoor.toString());
             coordinates.remove(0);
-            // SEND TO ARDUINO
-            // Format: BINLABEL:X,Y or BOX:X,Y
-
+            while(true){
+                Log.e("debuga", "Waiting for 3D Positioning");
+                String temp = receiveCoor();
+                if(temp.length()>1){
+                    Log.e("debuga", "Sending Next Coordinate");
+                    break;
+                }
+            }
             // WAIT UNTIL IT MOVES
 
             // GO TO SCANDIT ACTIVITY
@@ -455,7 +466,6 @@ public class MainActivity extends Activity {
 
                 Log.d("Data", data);
                 mImageView.setImageBitmap(myBitmap32);
-                sendCoor(data);
             }
         }
         return coordinates;
@@ -525,16 +535,6 @@ public class MainActivity extends Activity {
 
     }
 
-    private void turnOffLed() {
-        if (btSocket != null) {
-            try {
-                btSocket.getOutputStream().write("O".toString().getBytes());
-            } catch (IOException e) {
-                msg("Error");
-            }
-        }
-    }
-
     private void sendCoor(String data) {
         if (btSocket != null) {
             try {
@@ -544,6 +544,25 @@ public class MainActivity extends Activity {
                 msg("Error");
             }
         }
+    }
+
+
+    private String receiveCoor() {
+        byte[] buffer = new byte[1024];
+        int bytes;
+        String readMessage = "";
+
+        if (btSocket != null) {
+            try {
+                InputStream inFromServer = btSocket.getInputStream();
+                bytes = inFromServer.read(buffer);
+                readMessage = new String(buffer, 0, bytes);
+                Log.d("debuga", readMessage);
+            } catch (IOException e) {
+                msg("Error");
+            }
+        }
+        return readMessage;
     }
 
     // fast way to call Toast

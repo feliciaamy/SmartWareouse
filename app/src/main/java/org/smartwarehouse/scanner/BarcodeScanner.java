@@ -214,7 +214,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         // This callback acts the same as when not tracking and can be used for the events such as
         // when a code is newly recognized. Rejecting tracked codes has to be done in didProcess().
         // number of expected barcodes
-        int numExpectedCodes = 6;
+        int numExpectedCodes = 4;
         // get all the scanned barcodes from the session
         List<Barcode> allCodes = session.getAllRecognizedCodes();
 
