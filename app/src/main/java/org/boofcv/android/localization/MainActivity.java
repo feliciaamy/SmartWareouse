@@ -35,25 +35,14 @@ import java.util.List;
 import android.os.Handler;
 import android.widget.ImageView;
 
-import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
-import android.view.View;
-import android.widget.Button;
-import android.widget.SeekBar;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.os.AsyncTask;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import static android.content.ContentValues.TAG;
@@ -62,7 +51,7 @@ import static android.content.ContentValues.TAG;
  * Created by Amy on 20/5/17.
  */
 
-public class BoxDetectorActivity extends Activity {
+public class MainActivity extends Activity {
 
     //Bluetooth Functions
     String address = null;
@@ -308,11 +297,11 @@ public class BoxDetectorActivity extends Activity {
                 List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary);
                 List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(bottomBoundary);
 
-                // Labels Detection
-                LabelDetector labelDetector = new LabelDetector(ImageMat);
-                labelDetector.findLabels();
-                List<Dimension> labels = labelDetector.getLabels();
-                List<Dimension> boxCentroids = labelDetector.getCentroids();
+                // Boxes Detection
+                BoxDetector boxDetector = new BoxDetector(ImageMat);
+                boxDetector.findBoxes();
+                List<Dimension> labels = boxDetector.getEliminatedBoxes(boundaries);
+                List<Dimension> boxCentroids = boxDetector.getCentroids();
                 // Template Matching
 //                List<Dimension> boxes = Localization.runTemplateMatching(baseImg);
 //
@@ -322,7 +311,7 @@ public class BoxDetectorActivity extends Activity {
 //                }
 
                 // Initial Setting
-                Mat temp = labelDetector.getFilteredMat();
+                Mat temp = boxDetector.getFilteredMat();
                 Bitmap resultBitmap = Bitmap.createBitmap(temp.cols(), temp.rows(), Bitmap.Config.ARGB_8888);
 
                 Canvas cnvs = new Canvas(myBitmap32);
@@ -477,7 +466,7 @@ public class BoxDetectorActivity extends Activity {
 
         @Override
         protected void onPreExecute() {
-            progress = ProgressDialog.show(BoxDetectorActivity.this, "Connecting...", "Please wait!!!");  //show a progress dialog
+            progress = ProgressDialog.show(MainActivity.this, "Connecting...", "Please wait!!!");  //show a progress dialog
         }
 
         @Override

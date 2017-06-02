@@ -22,25 +22,25 @@ import java.util.List;
  * Created by Amy on 31/5/17.
  */
 
-public class LabelDetector {
+public class BoxDetector {
     private static Mat ImageMat;
     private static Mat filteredMat = new Mat();
 
     // Found
-    private static List<Dimension> labels = new ArrayList<Dimension>();
+    private static List<Dimension> boxes = new ArrayList<Dimension>();
     private static List<Dimension> centroids = new ArrayList<Dimension>();
 
 
-    public LabelDetector(Mat img) {
+    public BoxDetector(Mat img) {
         this.ImageMat = img;
         clear();
     }
 
-    public static void findLabels() {
+    public static void findBoxes() {
         filtering();
         List<MatOfPoint> coordinates = new ArrayList<MatOfPoint>();
         Imgproc.findContours(filteredMat, coordinates, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-//        final List<Point> potentialLabels = new ArrayList<Point>();
+//        final List<Point> potentialboxes = new ArrayList<Point>();
         final List<Float> ratio = new ArrayList<>();
         for (int i = 0; i < coordinates.size(); i++) {
             if (Imgproc.contourArea(coordinates.get(i)) > 50000 && Imgproc.contourArea(coordinates.get(i)) < 200000) {
@@ -49,7 +49,7 @@ public class LabelDetector {
                 float ratiod = ((float) rect.height / (float) rect.width);
                 if (0 < ratiod && ratiod < 0.6) {
                     // Drawing of rectangle
-                    labels.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.GREEN));
+                    boxes.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.GREEN));
                     Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
                     Moments moments = Imgproc.moments(coordinates.get(i));
                     final Point centroid = new Point();
@@ -64,8 +64,8 @@ public class LabelDetector {
         }
     }
 
-    public static List<Dimension> getLabels() {
-        return labels;
+    public static List<Dimension> getBoxes() {
+        return boxes;
     }
 
     private static void filtering() {
@@ -79,11 +79,9 @@ public class LabelDetector {
 
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size1);
         Mat kernel2 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size2);
-        Mat kernel3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size3);
         Imgproc.erode(filteredMat, filteredMat, kernel2);
         Imgproc.dilate(filteredMat, filteredMat, kernel);
         Imgproc.erode(filteredMat, filteredMat, kernel2);
-//        Imgproc.dilate(filteredMat, filteredMat, kernel2);
         Core.bitwise_not(filteredMat, filteredMat);
     }
 
@@ -91,13 +89,42 @@ public class LabelDetector {
         return filteredMat;
     }
 
+    public static List<Dimension> getEliminatedBoxes(List<Dimension> boundaries) {
+        List<Dimension> eliminatedBoxes = new ArrayList<Dimension>();
+
+        for (Dimension box : boxes) {
+            int score = 0;
+            double x = (box.right + box.left) / 2;
+            double y = (box.bottom + box.top) / 2;
+            for (Dimension b : boundaries) {
+                if (b.orientation == Orientation.HORIZONTAL) {
+                    if (y < b.center) {
+                        score -= 5;
+                    } else {
+                        score += 5;
+                    }
+                } else {
+                    if (x < b.center) {
+                        score -= 1;
+                    } else {
+                        score += 1;
+                    }
+                }
+            }
+            if (score == 0) {
+                eliminatedBoxes.add(box);
+            }
+        }
+        return eliminatedBoxes;
+    }
+
     private void clear() {
-        labels = new ArrayList<Dimension>();
+        boxes = new ArrayList<Dimension>();
         centroids = new ArrayList<Dimension>();
         filteredMat = new Mat();
     }
 
-    public static List<Dimension> getCentroids(){
+    public static List<Dimension> getCentroids() {
         return centroids;
     }
 }
