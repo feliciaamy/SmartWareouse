@@ -91,20 +91,20 @@ public class BoxDetector {
 
     public static List<Dimension> getEliminatedBoxes(List<Dimension> boundaries) {
         List<Dimension> eliminatedBoxes = new ArrayList<Dimension>();
-
+        double eps = 5;
         for (Dimension box : boxes) {
             int score = 0;
             double x = (box.right + box.left) / 2;
             double y = (box.bottom + box.top) / 2;
             for (Dimension b : boundaries) {
                 if (b.orientation == Orientation.HORIZONTAL) {
-                    if (y < b.center) {
+                    if (y - b.center < eps) {
                         score -= 5;
                     } else {
                         score += 5;
                     }
                 } else {
-                    if (x < b.center) {
+                    if (x - b.center < eps) {
                         score -= 1;
                     } else {
                         score += 1;
