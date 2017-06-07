@@ -152,14 +152,14 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         // the maximum number of codes to be decoded every frame
         settings.setMaxNumberOfCodesPerFrame(6);
         int[] symbologiesToEnable = new int[]{
-                Barcode.SYMBOLOGY_CODE128
+//                Barcode.SYMBOLOGY_CODE128
 //                Barcode.SYMBOLOGY_EAN13,
 //                Barcode.SYMBOLOGY_EAN8,
 //                Barcode.SYMBOLOGY_UPCA,
 //                Barcode.SYMBOLOGY_CODE39,
 //                Barcode.SYMBOLOGY_INTERLEAVED_2_OF_5,
 //                Barcode.SYMBOLOGY_UPCE,
-//                Barcode.SYMBOLOGY_DATA_MATRIX
+                Barcode.SYMBOLOGY_DATA_MATRIX
         };
         for (int sym : symbologiesToEnable) {
             settings.setSymbologyEnabled(sym, true);
@@ -214,7 +214,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         // This callback acts the same as when not tracking and can be used for the events such as
         // when a code is newly recognized. Rejecting tracked codes has to be done in didProcess().
         // number of expected barcodes
-        int numExpectedCodes = 4;
+        int numExpectedCodes = 1;
         // get all the scanned barcodes from the session
         List<Barcode> allCodes = session.getAllRecognizedCodes();
 
@@ -223,11 +223,16 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         if (allCodes.size() >= numExpectedCodes) {
             // pause scanning and clear the session. The scanning itself is resumed
             // when the user taps the screen.
-            Message msg = mHandler.obtainMessage(UIHandler.SHOW_BARCODES,
-                    allCodes);
+//            Message msg = mHandler.obtainMessage(UIHandler.SHOW_BARCODES,
+//                    allCodes);
+            String data = "";
+            for (Barcode b : allCodes) {
+                Log.d("Scandit barcode", b.getData());
+                data = data + b.getData() + ";";
+            }
 
             Intent resultData = new Intent(this, MainActivity.class);
-            resultData.putExtra("barcodes", createMessage((List<Barcode>) msg.obj));
+            resultData.putExtra("barcodes",data);
             setResult(Activity.RESULT_OK, resultData);
             session.stopScanning();
             session.clear();

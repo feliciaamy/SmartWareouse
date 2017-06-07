@@ -46,7 +46,7 @@ public class BoxDetector {
                 Rect rect = Imgproc.boundingRect(coordinates.get(i));
 
                 float ratiod = ((float) rect.height / (float) rect.width);
-                if (0 < ratiod && ratiod < 0.55) {
+                if (0.4 < ratiod && ratiod < 0.55) {
                     // Drawing of rectangle
                     boxes.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.GREEN));
                     Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
@@ -115,6 +115,16 @@ public class BoxDetector {
             }
         }
         return eliminatedBoxes;
+    }
+
+    public static List<Dimension> getEliminatedCentroids(List<Dimension> boxes) {
+        List<Dimension> centroids = new ArrayList<Dimension>();
+        for (Dimension box : boxes) {
+            double x = (box.right + box.left) / 2;
+            double y = (box.bottom + box.top) / 2;
+            centroids.add(new Dimension(x, y, 20, Color.BLACK));
+        }
+        return centroids;
     }
 
     private void clear() {

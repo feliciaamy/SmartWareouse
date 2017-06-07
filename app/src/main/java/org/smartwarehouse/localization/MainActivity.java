@@ -298,7 +298,7 @@ public class MainActivity extends Activity {
         if (!coordinates.isEmpty()) {
             currentCoor = coordinates.get(0);
             // Format: X,Y  |   SEND TO ARDUINO
-            sendCoor(currentCoor.toString());
+            sendCoor(currentCoor.toString()+"\n");
             Log.e("debuga", "Sent " + currentCoor.toString());
             coordinates.remove(0);
             while(true){
@@ -328,6 +328,8 @@ public class MainActivity extends Activity {
                 } else {
                     String[] temp = barcodes.split(";");
                     for (int i = 0; i < temp.length; i++) {
+                        Log.d("BARCODE", temp[i]);
+                        System.out.println("barcode:" + temp[i]);
                         if (temp[i].contains("1P")) {
                             barcodeList.setP(temp[i]);
                         } else if (temp[i].contains("1T")) {
@@ -400,7 +402,7 @@ public class MainActivity extends Activity {
                 // Boxes Detection
                 BoxDetector boxDetector = new BoxDetector(ImageMat);
                 List<Dimension> labels = boxDetector.getEliminatedBoxes(boundaries);
-                List<Dimension> boxCentroids = boxDetector.getCentroids();
+                List<Dimension> boxCentroids = boxDetector.getEliminatedCentroids(labels);
                 // Template Matching
 //                List<Dimension> boxes = Localization.runTemplateMatching(baseImg);
 //
