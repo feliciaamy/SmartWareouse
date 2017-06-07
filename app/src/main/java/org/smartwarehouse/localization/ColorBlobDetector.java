@@ -36,6 +36,9 @@ public class ColorBlobDetector {
     private static List<Dimension> bottomMarkers = new ArrayList<Dimension>();
 
     private static Dimension bottomBoundary;
+    private static Dimension leftBoundary;
+    private static Dimension rightBoundary;
+    private static Dimension topBoundary;
 
     // Colors
     private static final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};
@@ -86,6 +89,9 @@ public class ColorBlobDetector {
             }
             if (height >= 0) {
                 if (Math.abs(detected.get(i).y - height) > 300) {
+                    if (boundaries.isEmpty()) {
+                        topBoundary = new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN);
+                    }
                     boundaries.add(new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN));
                     heights.add(tempSum / tempCount);
                     bottomMarkers.clear();
@@ -116,14 +122,28 @@ public class ColorBlobDetector {
         // Last set of markers are the lowest
         if (heights.size() > 0) {
             // left
-            boundaries.add(new Dimension(heights.get(0), heights.get(heights.size() - 1), minX, Orientation.VERTICAL, Color.CYAN));
+            leftBoundary = new Dimension(heights.get(0), heights.get(heights.size() - 1), minX, Orientation.VERTICAL, Color.CYAN);
+            boundaries.add(leftBoundary);
             // right
-            boundaries.add(new Dimension(heights.get(0), heights.get(heights.size() - 1), maxX, Orientation.VERTICAL, Color.CYAN));
+            rightBoundary = new Dimension(heights.get(0), heights.get(heights.size() - 1), maxX, Orientation.VERTICAL, Color.CYAN);
+            boundaries.add(rightBoundary);
         }
     }
 
     public static Dimension getBottomBoundary() {
         return bottomBoundary;
+    }
+
+    public static Dimension getTopBoundary() {
+        return topBoundary;
+    }
+
+    public static Dimension getLeftBoundary() {
+        return leftBoundary;
+    }
+
+    public static Dimension getRightBoundary() {
+        return rightBoundary;
     }
 
     public static List<Dimension> getMarkers() {

@@ -65,8 +65,8 @@ public class BinLabelDetector {
         return potentialLabels;
     }
 
-    public static List<Dimension> getEliminatedLabels(Dimension boundary) {
-        return eliminateBinLabel(boundary);
+    public static List<Dimension> getEliminatedLabels(Dimension bottom, Dimension right, Dimension left) {
+        return eliminateBinLabel(bottom, right, left);
     }
 
     private static void filtering() {
@@ -87,10 +87,9 @@ public class BinLabelDetector {
         Imgproc.dilate(filteredMat, filteredMat, kernel);
     }
 
-    public static List<Dimension> getEliminatedCentroids(Dimension b) {
-        List<Dimension> eliminatedLabels = eliminateBinLabel(b);
+    public static List<Dimension> getEliminatedCentroids(List<Dimension> binLabels) {
         List<Dimension> eliminatedCentroids = new ArrayList<Dimension>();
-        for (Dimension label : eliminatedLabels) {
+        for (Dimension label : binLabels) {
             double x = (label.right + label.left) / 2;
             double y = (label.bottom + label.top) / 2;
             eliminatedCentroids.add(new Dimension(x, y, 20, Color.BLACK));
@@ -99,18 +98,23 @@ public class BinLabelDetector {
         return eliminatedCentroids;
     }
 
-    private static List<Dimension> eliminateBinLabel(Dimension b) {
+    private static List<Dimension> eliminateBinLabel(Dimension b, Dimension r, Dimension l) {
         List<Dimension> eliminatedLabels = new ArrayList<Dimension>();
 
         Log.d("Boundary", b.toString());
         if (b.orientation == Orientation.VERTICAL) {
             Log.d("ORIENTATION ERROR", "wrong orientation");
         }
+        if (r.orientation == Orientation.HORIZONTAL || l.orientation == Orientation.HORIZONTAL) {
+            Log.d("ORIENTATION ERROR", "wrong orientation");
+        }
         for (Dimension label : potentialLabels) {
             Log.d("label", label.toString());
             if (isInLine(label, b)) {
-                Log.d("Correct label", label.toString());
-                eliminatedLabels.add(label);
+                if(label.left > l.center && label.right < r.center){
+                    Log.d("Correct label", label.toString());
+                    eliminatedLabels.add(label);
+                }
             }
         }
         return eliminatedLabels;

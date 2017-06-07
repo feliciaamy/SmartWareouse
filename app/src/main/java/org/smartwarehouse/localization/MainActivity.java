@@ -298,13 +298,13 @@ public class MainActivity extends Activity {
         if (!coordinates.isEmpty()) {
             currentCoor = coordinates.get(0);
             // Format: X,Y  |   SEND TO ARDUINO
-            sendCoor(currentCoor.toString()+"\n");
+            sendCoor(currentCoor.toString() + "\n");
             Log.e("debuga", "Sent " + currentCoor.toString());
             coordinates.remove(0);
-            while(true){
+            while (true) {
                 Log.e("debuga", "Waiting for 3D Positioning");
                 String temp = receiveCoor();
-                if(temp.length()>1){
+                if (temp.length() > 1) {
                     Log.e("debuga", "Sending Next Coordinate");
                     break;
                 }
@@ -393,11 +393,13 @@ public class MainActivity extends Activity {
                 List<Dimension> foundMarkers = colorBlobDetector.getMarkers();
                 List<Dimension> boundaries = colorBlobDetector.getBoundaries();
                 Dimension bottomBoundary = colorBlobDetector.getBottomBoundary();
+                Dimension rightBoundary = colorBlobDetector.getRightBoundary();
+                Dimension leftBoundary = colorBlobDetector.getLeftBoundary();
 
                 // Bin Label Detection
                 BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
-                List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary);
-                List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(bottomBoundary);
+                List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary, rightBoundary, leftBoundary);
+                List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(binLabels);
 
                 // Boxes Detection
                 BoxDetector boxDetector = new BoxDetector(ImageMat);
