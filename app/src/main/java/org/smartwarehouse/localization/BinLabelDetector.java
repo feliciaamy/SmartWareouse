@@ -90,8 +90,8 @@ public class BinLabelDetector {
     public static List<Dimension> getEliminatedCentroids(List<Dimension> binLabels) {
         List<Dimension> eliminatedCentroids = new ArrayList<Dimension>();
         for (Dimension label : binLabels) {
-            double x = (label.right + label.left) / 2;
-            double y = (label.bottom + label.top) / 2;
+            double x = (label.getRight() + label.getLeft()) / 2;
+            double y = (label.getBottom() + label.getTop()) / 2;
             eliminatedCentroids.add(new Dimension(x, y, 20, Color.BLACK));
         }
 
@@ -102,16 +102,16 @@ public class BinLabelDetector {
         List<Dimension> eliminatedLabels = new ArrayList<Dimension>();
 
         Log.d("Boundary", b.toString());
-        if (b.orientation == Orientation.VERTICAL) {
+        if (b.getOrientation() == Orientation.VERTICAL) {
             Log.d("ORIENTATION ERROR", "wrong orientation");
         }
-        if (r.orientation == Orientation.HORIZONTAL || l.orientation == Orientation.HORIZONTAL) {
+        if (r.getOrientation() == Orientation.HORIZONTAL || l.getOrientation() == Orientation.HORIZONTAL) {
             Log.d("ORIENTATION ERROR", "wrong orientation");
         }
         for (Dimension label : potentialLabels) {
             Log.d("label", label.toString());
             if (isInLine(label, b)) {
-                if(label.left > l.center && label.right < r.center){
+                if(label.getLeft() > l.getCenter() && label.getRight() < r.getCenter()){
                     Log.d("Correct label", label.toString());
                     eliminatedLabels.add(label);
                 }
@@ -121,9 +121,9 @@ public class BinLabelDetector {
     }
 
     private static boolean isInLine(Dimension label, Dimension line) {
-        if (line.shape == Shape.LINE && label.shape == Shape.RECTANGLE) {
-            double height = Math.abs(label.top - label.bottom);
-            if (Math.abs((label.top + label.bottom) / 2 - line.center) < height * 2) {
+        if (line.getShape() == Shape.LINE && label.getShape() == Shape.RECTANGLE) {
+            double height = Math.abs(label.getTop() - label.getBottom());
+            if (Math.abs((label.getTop() + label.getBottom()) / 2 - line.getCenter()) < height * 2) {
                 return true;
             }
         }

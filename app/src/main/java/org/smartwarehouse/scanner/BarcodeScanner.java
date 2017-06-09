@@ -147,6 +147,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         // In your own apps, only enable the symbologies you actually need.
         ScanSettings settings = ScanSettings.create();
         // if they match an already decoded barcode in the session
+        settings.setRelativeZoom(0.8f);
         settings.setCodeDuplicateFilter(-1);
 
         // the maximum number of codes to be decoded every frame
@@ -190,6 +191,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
 //        BarcodePicker picker = new BarcodePicker(this, settings);
 
         mBarcodePicker = new BarcodePicker(this, settings);
+        mBarcodePicker.applyScanSettings(settings);
         // Set the GUI style to MatrixScan to see a visualization of the tracked barcodes. If you
         // would like to visualize it yourself, set it to ScanOverlay.GUI_STYLE_NONE and update your
         // visualization in the didProcess() callback.

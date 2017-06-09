@@ -6,16 +6,68 @@ package org.smartwarehouse.localization;
 
 public class Dimension {
     // shape = RECTANGLE
-    double left, top, right, bottom;
+    private double left, top, right, bottom;
     // shape = CIRCLE
-    int r;
-    double x, y;
+    private int r;
+    private double x, y;
     // shape = LINE
-    double start, end, center;
+    private double start, end, center;
 
-    int color;
-    Orientation orientation;
-    Shape shape;
+    private int color;
+    private Orientation orientation;
+    private Shape shape;
+
+    public double getLeft() {
+        return left;
+    }
+
+    public double getTop() {
+        return top;
+    }
+
+    public double getRight() {
+        return right;
+    }
+
+    public double getBottom() {
+        return bottom;
+    }
+
+    public int getR() {
+        return r;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getStart() {
+        return start;
+    }
+
+    public double getEnd() {
+        return end;
+    }
+
+    public double getCenter() {
+        return center;
+    }
+
+    public int getColor() {
+        return color;
+    }
+
+    public Orientation getOrientation() {
+        return orientation;
+    }
+
+    public Shape getShape() {
+        return shape;
+    }
 
     // Rectangle
     public Dimension(double left, double top, double right, double bottom, int color) {
@@ -23,6 +75,7 @@ public class Dimension {
         this.top = top;
         this.right = right;
         this.bottom = bottom;
+
         this.color = color;
         this.shape = Shape.RECTANGLE;
     }

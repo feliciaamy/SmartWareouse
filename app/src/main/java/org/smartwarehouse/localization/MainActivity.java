@@ -17,7 +17,6 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
-import org.apache.commons.io.IOUtils;
 import org.smartwarehouse.R;
 import org.smartwarehouse.scanner.BarcodeScanner;
 import org.opencv.android.BaseLoaderCallback;
@@ -31,7 +30,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -375,8 +373,8 @@ public class MainActivity extends Activity {
         Bitmap bitmap = BitmapFactory.decodeFile(lastPictureTaken.toString());
 
         Mat ImageMat = new Mat();
-        Bitmap myBitmap32 = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-        Utils.bitmapToMat(myBitmap32, ImageMat);
+        Bitmap resultBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Utils.bitmapToMat(resultBitmap, ImageMat);
 
         mPreview.stopPreviewAndFreeCamera();
         setContentView(R.layout.templatematching);
@@ -388,15 +386,18 @@ public class MainActivity extends Activity {
         while (!done) {
             if (mImageView.isShown()) {
                 done = true;
-                // Color Detection
-                ColorBlobDetector colorBlobDetector = new ColorBlobDetector(ImageMat);
-                List<Dimension> foundMarkers = colorBlobDetector.getMarkers();
-                List<Dimension> boundaries = colorBlobDetector.getBoundaries();
-                Dimension bottomBoundary = colorBlobDetector.getBottomBoundary();
-                Dimension rightBoundary = colorBlobDetector.getRightBoundary();
-                Dimension leftBoundary = colorBlobDetector.getLeftBoundary();
+                // Boundaries Detection
+                BoundaryDetector boundaryDetector = new BoundaryDetector(ImageMat);
+                List<Dimension> foundMarkers = boundaryDetector.getMarkers();
+                List<Dimension> boundaries = boundaryDetector.getBoundaries();
+                List<Dimension> bottomMarkers = boundaryDetector.getBottomMarkers();
+                Dimension bottomBoundary = boundaryDetector.getBottomBoundary();
+                Dimension rightBoundary = boundaryDetector.getRightBoundary();
+                Dimension leftBoundary = boundaryDetector.getLeftBoundary();
+                Dimension topBoundary = boundaryDetector.getTopBoundary();
+                double height = Math.abs(bottomBoundary.getCenter() - topBoundary.getCenter());
 
-                // Bin Label Detection
+                // Bin Labels Detection
                 BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
                 List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary, rightBoundary, leftBoundary);
                 List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(binLabels);
@@ -405,71 +406,61 @@ public class MainActivity extends Activity {
                 BoxDetector boxDetector = new BoxDetector(ImageMat);
                 List<Dimension> labels = boxDetector.getEliminatedBoxes(boundaries);
                 List<Dimension> boxCentroids = boxDetector.getEliminatedCentroids(labels);
-                // Template Matching
-//                List<Dimension> boxes = Localization.runTemplateMatching(baseImg);
-//
-//                for (Dimension d : boxes) {
-//                    paint.setColor(d.color);
-//                    cnvs.drawRect((float) d.left, (float) d.top, (float) d.right, (float) d.bottom, paint);
-//                }
 
                 // Initial Setting
-                Mat temp = boxDetector.getFilteredMat();
-                Bitmap resultBitmap = Bitmap.createBitmap(temp.cols(), temp.rows(), Bitmap.Config.ARGB_8888);
-
-                Canvas cnvs = new Canvas(myBitmap32);
-                cnvs.drawBitmap(myBitmap32, 0, 0, null);
-                Paint paint = new Paint();
+                Canvas cnvs = new Canvas(resultBitmap);
+                cnvs.drawBitmap(resultBitmap, 0, 0, null);
+                Paint paintStroke = new Paint();
+                Paint paintFill = new Paint();
+                paintStroke.setStyle(Paint.Style.STROKE);
+                paintStroke.setStrokeWidth(20f);
 
                 // Drawing markers
                 for (Dimension d : foundMarkers) {
                     Log.d("Dimension", d.toString());
-                    paint.setColor(d.color);
-                    cnvs.drawCircle((float) d.x, (float) d.y, (float) d.r, paint);
+                    paintFill.setColor(d.getColor());
+                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
                 }
 
                 // Drawing Lines
-                paint.setTextSize(62f);
-                paint.setStrokeWidth(20f);
                 for (Dimension d : boundaries) {
                     Log.d("Dimension", d.toString());
-                    paint.setColor(d.color);
-                    if (d.orientation == Orientation.HORIZONTAL) {
-                        cnvs.drawLine((float) d.start, (float) d.center, (float) d.end, (float) d.center, paint);
-                    } else if (d.orientation == Orientation.VERTICAL) {
-                        cnvs.drawLine((float) d.center, (float) d.start, (float) d.center, (float) d.end, paint);
+                    paintStroke.setColor(d.getColor());
+                    if (d.getOrientation() == Orientation.HORIZONTAL) {
+                        cnvs.drawLine((float) d.getStart(), (float) d.getCenter(), (float) d.getEnd(), (float) d.getCenter(), paintStroke);
+                    } else if (d.getOrientation() == Orientation.VERTICAL) {
+                        cnvs.drawLine((float) d.getCenter(), (float) d.getStart(), (float) d.getCenter(), (float) d.getEnd(), paintStroke);
                     }
                 }
-                paint.setStyle(Paint.Style.STROKE);
+
                 // Drawing Bin Labels
                 for (Dimension d : binLabels) {
-                    paint.setColor(d.color);
-                    cnvs.drawRect((float) d.left, (float) d.top, (float) d.right, (float) d.bottom, paint);
+                    paintStroke.setColor(d.getColor());
+                    cnvs.drawRect((float) d.getLeft(), (float) d.getTop(), (float) d.getRight(), (float) d.getBottom(), paintStroke);
                 }
                 // Drawing Boxes' Labels
                 for (Dimension d : labels) {
-                    paint.setColor(d.color);
-                    cnvs.drawRect((float) d.left, (float) d.top, (float) d.right, (float) d.bottom, paint);
+                    paintStroke.setColor(d.getColor());
+                    cnvs.drawRect((float) d.getLeft(), (float) d.getTop(), (float) d.getRight(), (float) d.getBottom(), paintStroke);
                 }
                 // Drawing centroids
                 String data = "";
-                paint.setStyle(Paint.Style.FILL);
                 for (Dimension d : boxCentroids) {
-                    paint.setColor(d.color);
-                    cnvs.drawCircle((float) d.x, (float) d.y, (float) d.r, paint);
-                    data = data + d.x + "," + d.y + ";";
-                    coordinates.add(new Coordinate(Type.BOX, d.x, d.y));
+                    paintFill.setColor(d.getColor());
+                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
+                    data = data + d.getX() + "," + d.getY() + ";";
+                    coordinates.add(new Coordinate(Type.BOX, d.getX(), d.getY()));
                 }
 
                 for (Dimension d : binLabelCentroids) {
-                    paint.setColor(d.color);
-                    cnvs.drawCircle((float) d.x, (float) d.y, (float) d.r, paint);
-                    data = data + d.x + "," + d.y + ";";
-                    coordinates.add(new Coordinate(Type.BINLABEL, d.x, d.y));
+                    paintFill.setColor(d.getColor());
+                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
+                    data = data + d.getX() + "," + d.getY() + ";";
+                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
                 }
 
                 Log.d("Data", data);
-                mImageView.setImageBitmap(myBitmap32);
+                mImageView.setImageBitmap(resultBitmap);
             }
         }
         return coordinates;

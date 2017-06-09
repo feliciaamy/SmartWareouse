@@ -93,17 +93,17 @@ public class BoxDetector {
         double eps = 5;
         for (Dimension box : boxes) {
             int score = 0;
-            double x = (box.right + box.left) / 2;
-            double y = (box.bottom + box.top) / 2;
+            double x = (box.getRight() + box.getLeft()) / 2;
+            double y = (box.getBottom() + box.getTop()) / 2;
             for (Dimension b : boundaries) {
-                if (b.orientation == Orientation.HORIZONTAL) {
-                    if (y - b.center < eps) {
+                if (b.getOrientation() == Orientation.HORIZONTAL) {
+                    if (y - b.getCenter() < eps) {
                         score -= 5;
                     } else {
                         score += 5;
                     }
                 } else {
-                    if (x - b.center < eps) {
+                    if (x - b.getCenter() < eps) {
                         score -= 1;
                     } else {
                         score += 1;
@@ -120,8 +120,8 @@ public class BoxDetector {
     public static List<Dimension> getEliminatedCentroids(List<Dimension> boxes) {
         List<Dimension> centroids = new ArrayList<Dimension>();
         for (Dimension box : boxes) {
-            double x = (box.right + box.left) / 2;
-            double y = (box.bottom + box.top) / 2;
+            double x = (box.getRight() + box.getLeft()) / 2;
+            double y = (box.getBottom() + box.getTop()) / 2;
             centroids.add(new Dimension(x, y, 20, Color.BLACK));
         }
         return centroids;

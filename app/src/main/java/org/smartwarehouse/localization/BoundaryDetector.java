@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class ColorBlobDetector {
+public class BoundaryDetector {
     // Colours
     private final static Scalar LOWERTHRESHOLD = new Scalar(110, 100, 100); // Dull Red color – lower hsv values
     private final static Scalar UPPERTHRESHOLD = new Scalar(120, 255, 255); // Dull Red color – higher hsv values
@@ -43,7 +43,7 @@ public class ColorBlobDetector {
     // Colors
     private static final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};
 
-    public ColorBlobDetector(Mat img) {
+    public BoundaryDetector(Mat img) {
         this.ImageMat = img;
         clear();
         Imgproc.cvtColor(ImageMat, mHsv, Imgproc.COLOR_BGR2HSV);
@@ -130,6 +130,20 @@ public class ColorBlobDetector {
         }
     }
 
+    private static void filtering() {
+        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
+        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
+        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
+    }
+
+    private void clear() {
+        foundMarkers = new ArrayList<Dimension>();
+        boundaries = new ArrayList<Dimension>();
+        heights = new ArrayList<Double>();
+        bottomMarkers = new ArrayList<Dimension>();
+    }
+
+    // Getters
     public static Dimension getBottomBoundary() {
         return bottomBoundary;
     }
@@ -154,28 +168,15 @@ public class ColorBlobDetector {
         return boundaries;
     }
 
-    public static List<Dimension> getBinLabels() {
+    public static List<Dimension> getBottomMarkers() {
         Collections.sort(bottomMarkers, new Comparator<Dimension>() {
             public int compare(Dimension d1, Dimension d2) {
-                return Double.compare(d2.x, d1.x);
+                return Double.compare(d2.getX(), d1.getX());
             }
         });
         for (Dimension d : bottomMarkers) {
             Log.d("Sorted Bin Labels", d.toString());
         }
         return bottomMarkers;
-    }
-
-    private static void filtering() {
-        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
-        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
-        Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
-    }
-
-    private void clear() {
-        foundMarkers = new ArrayList<Dimension>();
-        boundaries = new ArrayList<Dimension>();
-        heights = new ArrayList<Double>();
-        bottomMarkers = new ArrayList<Dimension>();
     }
 }
