@@ -67,9 +67,9 @@ public class MainActivity extends Activity {
     //Bluetooth Functions
     String address = null;
     private ProgressDialog progress;
-    BluetoothAdapter myBluetooth = null;
-    BluetoothSocket btSocket = null;
-    private boolean isBtConnected = false;
+    BluetoothAdapter myBluetooth = Overall_Interface.myBluetooth;
+    BluetoothSocket btSocket = Overall_Interface.btSocket;
+    private boolean isBtConnected = Overall_Interface.isBtConnected;
     //SPP UUID. Look for it
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
@@ -115,9 +115,9 @@ public class MainActivity extends Activity {
         setContentView(R.layout.camera_localization);
 
         //Bluetooth automatic connection
-        Intent newint = getIntent();
-        address = newint.getStringExtra(DeviceList.EXTRA_ADDRESS); //receive the address of the bluetooth device
-        new ConnectBT().execute(); //Call the class to connect
+//        Intent newint = getIntent();
+//        address = newint.getStringExtra(DeviceList.EXTRA_ADDRESS); //receive the address of the bluetooth device
+//        new ConnectBT().execute(); //Call the class to connect
 
         // Create an instance of Camera
         mCamera = getCameraInstance();
@@ -293,10 +293,11 @@ public class MainActivity extends Activity {
     }
 
     private void readBarcodes() {
+        coordinates.add(new Coordinate(Type.BINLABEL,2592,1458)); //Supposed to be re-zeroing, type may be wrong
         if (!coordinates.isEmpty()) {
             currentCoor = coordinates.get(0);
             // Format: X,Y  |   SEND TO ARDUINO
-            sendCoor(currentCoor.toString() + "\n");
+            sendCoor("s," + currentCoor.x + "," + currentCoor.y + "\n");
             Log.e("debuga", "Sent " + currentCoor.toString());
             coordinates.remove(0);
             while (true) {
