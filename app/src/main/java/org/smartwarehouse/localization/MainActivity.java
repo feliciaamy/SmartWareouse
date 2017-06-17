@@ -49,6 +49,8 @@ import android.os.AsyncTask;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static android.content.ContentValues.TAG;
 
@@ -57,12 +59,17 @@ import static android.content.ContentValues.TAG;
  */
 
 public class MainActivity extends Activity {
+    // Variable
+    private final int IMAGE_HEIGHT = 2916;
+    private final int IMAGE_WIDTH = 5184;
+    private double height = 0;
+
     // Reading Barcodes
     final int GET_BARCODE = 1;
-    private List<Coordinate> coordinates = new ArrayList<Coordinate>();
-    private Map<Coordinate, Barcodes> result = new HashMap<>();
+    private Bin currentBin;
+    private List<Bin> result = new ArrayList<>();
+    private List<Bin> queue = new ArrayList<>();
     private Coordinate currentCoor;
-
 
     //Bluetooth Functions
     String address = null;
@@ -73,6 +80,7 @@ public class MainActivity extends Activity {
     //SPP UUID. Look for it
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
+    // Camera & File
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
     private boolean safeToTakePicture = false;
@@ -111,6 +119,13 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        startScanning();
+    }
+
+    private void startScanning() {
+        if (!isPrinterReady()) {
+            Log.e("3D printer", "is not set");
+        }
         checkCameraHardware(this);
         setContentView(R.layout.camera_localization);
 
@@ -134,7 +149,6 @@ public class MainActivity extends Activity {
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
 
-        final Button captureButton = (Button) findViewById(R.id.button_capture);
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -153,56 +167,6 @@ public class MainActivity extends Activity {
                 close();
             }
         }, 6000);
-
-
-        captureButton.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        // get an image from the camera
-                        mCamera.takePicture(null, null, mPicture);
-                    }
-                }
-        );
-
-        Button in = (Button) findViewById(R.id.in);
-        in.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        // get an image from the camera
-                        Log.e("Max Zoom", mCamera.getParameters().getMaxZoom() + "");
-                        Log.e("Focal Length", mCamera.getParameters().getFocalLength() + "");
-                        Log.e("Current Zoom", mCamera.getParameters().getZoom() + "");
-                        int current = mCamera.getParameters().getZoom();
-                        if (current < 10) {
-                            Camera.Parameters param = mCamera.getParameters();
-                            param.setZoom(current + 1);
-                            mCamera.setParameters(param);
-                        }
-                    }
-                }
-        );
-
-        Button out = (Button) findViewById(R.id.out);
-        out.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        // get an image from the camera
-                        Log.e("Max Zoom", mCamera.getParameters().getMaxZoom() + "");
-                        Log.e("Focal Length", mCamera.getParameters().getFocalLength() + "");
-                        Log.e("Current Zoom", mCamera.getParameters().getZoom() + "");
-                        Log.e("Zoom Supported", mCamera.getParameters().isZoomSupported() + "");
-                        int current = mCamera.getParameters().getZoom();
-                        if (current > 0) {
-                            Camera.Parameters param = mCamera.getParameters();
-                            param.setZoom(current - 1);
-                            mCamera.setParameters(param);
-                        }
-                    }
-                }
-        );
     }
 
     /**
@@ -225,7 +189,6 @@ public class MainActivity extends Activity {
         Camera c = null;
         try {
             c = Camera.open(); // attempt to get a Camera instance
-//            Log.e(Camera.;)
         } catch (Exception e) {
             // Camera is not available (in use or does not exist)
         }
@@ -277,12 +240,12 @@ public class MainActivity extends Activity {
 
     private void close() {
         mPreview.stopPreviewAndFreeCamera();
-        coordinates = processData();
+        queue = processData(lastPictureTaken);
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 try {
-                    readBarcodes();
+                    queueing();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -292,28 +255,84 @@ public class MainActivity extends Activity {
 
     }
 
-    private void readBarcodes() {
-        coordinates.add(new Coordinate(Type.BINLABEL,2592,1458)); //Supposed to be re-zeroing, type may be wrong
-        if (!coordinates.isEmpty()) {
-            currentCoor = coordinates.get(0);
-            // Format: X,Y  |   SEND TO ARDUINO
-            sendCoor("s," + currentCoor.x + "," + currentCoor.y + "\n");
-            Log.e("debuga", "Sent " + currentCoor.toString());
-            coordinates.remove(0);
-            while (true) {
-                Log.e("debuga", "Waiting for 3D Positioning");
-                String temp = receiveCoor();
-                if (temp.length() > 1) {
-                    Log.e("debuga", "Sending Next Coordinate");
-                    break;
-                }
+    private void queueing() {
+        if (!queue.isEmpty() || currentBin != null) {
+            if (currentBin == null) {
+                currentBin = queue.get(0);
+                queue.remove(0);
             }
-            // WAIT UNTIL IT MOVES
 
-            // GO TO SCANDIT ACTIVITY
-            Intent intent = new Intent(this, BarcodeScanner.class);
-            startActivityForResult(intent, GET_BARCODE);
+            // Read bin label
+            if (currentBin.getBinLabelBarcode() == null) {
+                currentCoor = currentBin.getBinLabelCoordinate();
+                readBarcodes();
+            } else if (currentBin.hasNext()) {
+                // Read Box
+                currentCoor = currentBin.nextBox();
+                readBarcodes();
+            } else {
+                // Next Bin
+                result.add(currentBin);
+                currentBin = null;
+                queueing();
+            }
+        } else {
+            Log.d("Read Barcode", "Finish reading");
+            currentBin = null;
+            currentCoor = null;
+
+            startScanning();
         }
+    }
+
+    private boolean isPrinterReady() {
+        // Zeroing 3D printer
+        if (height == -1) {
+            sendCoor("l0,\n");
+            height = 0;
+        }
+        sendCoor("z," + 0 + "," + (height * 0.8) + "\n");
+        if (!receiveMessage().equals("1")) {
+            return false;
+        }
+        // Centering 3D printer
+        sendCoor("c,\n");
+        if (!receiveMessage().equals("1")) {
+            return false;
+        }
+        return true;
+    }
+
+    private void restartActivity() {
+        Intent intent = getIntent();
+        finish();
+        startActivity(intent);
+    }
+
+    private void readBarcodes() {
+
+        Log.d("Send Coordinate", "Sent " + currentCoor.toString());
+        sendCoor("s," + currentCoor.x + "," + currentCoor.y + "\n");
+
+
+        // Format: X,Y  |   SEND TO ARDUINO
+
+        // WAIT UNTIL IT MOVES
+        while (true) {
+            Log.d("debuga", "Waiting for 3D Positioning");
+//                String temp = receiveCoor();
+            String temp = "hai";
+            if (temp.length() > 1) {
+                Log.d("debuga", "Sending Next Coordinate");
+                break;
+            }
+        }
+
+        // GO TO SCANDIT ACTIVITY
+        Intent intent = new Intent(this, BarcodeScanner.class);
+        intent.putExtra("type", currentCoor.type.toString());
+        startActivityForResult(intent, GET_BARCODE);
+
     }
 
     protected void onActivityResult(int requestCode, int resultCode,
@@ -321,39 +340,35 @@ public class MainActivity extends Activity {
         if (requestCode == GET_BARCODE) {
             if (resultCode == RESULT_OK) {
                 String barcodes = data.getStringExtra("barcodes");
+                Log.d("BARCODE", barcodes);
                 Barcodes barcodeList = new Barcodes(currentCoor.type);
                 if (currentCoor.type == Type.BINLABEL) {
                     barcodeList.setBarcode(barcodes);
+                    currentBin.setBinLabelBarcode(barcodeList);
                 } else {
-                    String[] temp = barcodes.split(";");
-                    for (int i = 0; i < temp.length; i++) {
-                        Log.d("BARCODE", temp[i]);
-                        System.out.println("barcode:" + temp[i]);
-                        if (temp[i].contains("1P")) {
-                            barcodeList.setP(temp[i]);
-                        } else if (temp[i].contains("1T")) {
-                            barcodeList.setT(temp[i]);
-                        } else if (temp[i].contains("9D")) {
-                            barcodeList.setD9(temp[i]);
-                        } else if (temp[i].contains("Q")) {
-                            barcodeList.setQ(temp[i]);
-                        } else if (temp[i].contains("X")) {
-                            barcodeList.setX(temp[i]);
-                        } else if (temp[i].contains("13D")) {
-                            barcodeList.setD13(temp[i]);
-                        } else {
-                            Log.e("ERROR BARCODE", temp[i]);
-                        }
+                    // Regex for barcode
+                    String pattern = "(\\BX9\\d+)(\\B1T1E\\d+\\w+)(\\B9D\\d+)(\\BQ\\d+)(\\B1PSP\\d+)";
+                    Pattern r = Pattern.compile(pattern);
+
+                    Matcher m = r.matcher(barcodes);
+                    if (m.find()) {
+                        barcodeList.setX(m.group(1));
+                        barcodeList.setT(m.group(2));
+                        barcodeList.setD9(m.group(3));
+                        barcodeList.setQ(m.group(4));
+                        barcodeList.setP(m.group(5));
                     }
+                    Log.d("Barcode result", barcodeList.toString());
+                    currentBin.mapBoxes(currentCoor, barcodeList);
                 }
                 Log.d("Coordinate, barcodes", currentCoor.toString() + ", " + barcodes);
 
-                result.put(currentCoor, barcodeList);
+//                result.put(currentCoor, barcodeList);
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            readBarcodes();
+                            queueing();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -367,11 +382,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    private List<Coordinate> processData() {
-        List<Coordinate> coordinates = new ArrayList<Coordinate>();
+    private List<Bin> processData(File file) {
+//        List<Coordinate> coordinates = new ArrayList<Coordinate>();
+        List<Bin> queue = new ArrayList<>();
 
         // Code
-        Bitmap bitmap = BitmapFactory.decodeFile(lastPictureTaken.toString());
+        Bitmap bitmap = BitmapFactory.decodeFile(file.toString());
 
         Mat ImageMat = new Mat();
         Bitmap resultBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
@@ -396,7 +412,11 @@ public class MainActivity extends Activity {
                 Dimension rightBoundary = boundaryDetector.getRightBoundary();
                 Dimension leftBoundary = boundaryDetector.getLeftBoundary();
                 Dimension topBoundary = boundaryDetector.getTopBoundary();
-                double height = Math.abs(bottomBoundary.getCenter() - topBoundary.getCenter());
+                if (bottomBoundary != null && topBoundary != null) {
+                    height = Math.abs(bottomBoundary.getCenter() - topBoundary.getCenter());
+                } else {
+                    height = -1;
+                }
 
                 // Bin Labels Detection
                 BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
@@ -407,6 +427,9 @@ public class MainActivity extends Activity {
                 BoxDetector boxDetector = new BoxDetector(ImageMat);
                 List<Dimension> labels = boxDetector.getEliminatedBoxes(boundaries);
                 List<Dimension> boxCentroids = boxDetector.getEliminatedCentroids(labels);
+
+                // Create Queue
+                queue = createQueue(bottomMarkers, binLabelCentroids, boxCentroids);
 
                 // Initial Setting
                 Canvas cnvs = new Canvas(resultBitmap);
@@ -450,21 +473,58 @@ public class MainActivity extends Activity {
                     paintFill.setColor(d.getColor());
                     cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
                     data = data + d.getX() + "," + d.getY() + ";";
-                    coordinates.add(new Coordinate(Type.BOX, d.getX(), d.getY()));
+//                    coordinates.add(new Coordinate(Type.BOX, d.getX(), d.getY()));
                 }
 
                 for (Dimension d : binLabelCentroids) {
                     paintFill.setColor(d.getColor());
                     cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
                     data = data + d.getX() + "," + d.getY() + ";";
-                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
+//                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
                 }
 
                 Log.d("Data", data);
                 mImageView.setImageBitmap(resultBitmap);
+                storeImage(resultBitmap);
             }
         }
-        return coordinates;
+        return queue;
+    }
+
+    private List<Bin> createQueue(List<Dimension> bottomMarkers, List<Dimension> binLabelCentroids,
+                                  List<Dimension> boxCentroids) {
+        List<Bin> queue = new ArrayList<>();
+
+        for (int i = 0; i < bottomMarkers.size() - 1; i++) {
+            List<Coordinate> temp = new ArrayList<>();
+            if (!binLabelCentroids.isEmpty()) {
+                Dimension binLabel = binLabelCentroids.get(0);
+                Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
+                Log.d("Queue Binlabel", binLabel.toString());
+                if (binLabel.getX() > bottomMarkers.get(i).getX() && binLabel.getX() < bottomMarkers.get(i + 1).getX()) {
+                    binLabelCentroids.remove(0);
+                    while (!boxCentroids.isEmpty()) {
+                        Dimension box = boxCentroids.get(0);
+                        if (box.getX() > bottomMarkers.get(i).getX() && box.getX() < bottomMarkers.get(i + 1).getX()) {
+                            temp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
+                            Log.d("Add box", box.toString());
+                            boxCentroids.remove(0);
+                        } else {
+                            break;
+                        }
+                    }
+                    queue.add(new Bin(new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY()), temp));
+                }
+            } else {
+                break;
+            }
+        }
+
+        Log.d("Queue", "Size: " + queue.size());
+        for (Bin bin : queue) {
+            Log.d("QUEUE", bin.toString());
+        }
+        return queue;
     }
 
     public void takePicture(final Camera.PictureCallback callback) throws Exception {
@@ -535,7 +595,7 @@ public class MainActivity extends Activity {
         if (btSocket != null) {
             try {
                 btSocket.getOutputStream().write(data.toString().getBytes());
-                Log.d("debug", "message send");
+                Log.d("sendCoor", data);
             } catch (IOException e) {
                 msg("Error");
             }
@@ -543,7 +603,7 @@ public class MainActivity extends Activity {
     }
 
 
-    private String receiveCoor() {
+    private String receiveMessage() {
         byte[] buffer = new byte[1024];
         int bytes;
         String readMessage = "";
@@ -553,7 +613,7 @@ public class MainActivity extends Activity {
                 InputStream inFromServer = btSocket.getInputStream();
                 bytes = inFromServer.read(buffer);
                 readMessage = new String(buffer, 0, bytes);
-                Log.d("debuga", readMessage);
+                Log.d("Bluetooth", readMessage);
             } catch (IOException e) {
                 msg("Error");
             }
@@ -605,6 +665,47 @@ public class MainActivity extends Activity {
                 isBtConnected = true;
             }
             progress.dismiss();
+        }
+    }
+
+    private void saveBitmap(Bitmap bitmap) {
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "result");
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(new File(mediaStorageDir.getPath() + File.separator + lastPictureTaken.getName()));
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
+            // PNG is a lossless format, the compression factor (100) is ignored
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void storeImage(Bitmap image) {
+        File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+        if (pictureFile == null) {
+            Log.d(TAG,
+                    "Error creating media file, check storage permissions: ");// e.getMessage());
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            image.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            Log.d(TAG, "Error accessing file: " + e.getMessage());
         }
     }
 

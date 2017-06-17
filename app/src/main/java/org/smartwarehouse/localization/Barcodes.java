@@ -6,7 +6,7 @@ package org.smartwarehouse.localization;
 
 class Barcodes {
     // Box
-    private String T, P, D9, Q, X, D13;
+    private String T, P, D9, Q, X;
 
     // Bin label
     private String barcode;
@@ -73,10 +73,6 @@ class Barcodes {
         return X;
     }
 
-    public String getD13() {
-        return D13;
-    }
-
     public String getBarcode() {
         return barcode;
     }
@@ -85,13 +81,6 @@ class Barcodes {
         return type;
     }
 
-    public void setD13(String D13) {
-        if (type != Type.BOX) {
-            return;
-
-        }
-        this.D13 = D13;
-    }
 
     public void setBarcode(String barcode) {
         if (type != Type.BINLABEL) {
@@ -100,9 +89,11 @@ class Barcodes {
         this.barcode = barcode;
     }
 
-//    public String toString(){
-//        if (this.type == Type.BINLABEL){
-//            return
-//        }
-//    }
+    public String toString() {
+        if (this.type == Type.BINLABEL) {
+            return barcode;
+        } else {
+            return X + "; " + T + "; " + D9 + "; " + Q + "; " + P;
+        }
+    }
 }

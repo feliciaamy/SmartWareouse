@@ -117,11 +117,12 @@ public class Dimension {
                     return false;
                 }
 
-                if (Math.abs(this.start - ((Dimension) o).start) < eps &&
-                        Math.abs(this.end - ((Dimension) o).end) < eps &&
-                        Math.abs(Math.abs(this.start - this.end) - Math.abs(((Dimension) o).start - ((Dimension) o).end)) < eps &&
-                        Math.abs(this.center - ((Dimension) o).center) < eps) {
-                    return true;
+                if (Math.abs(this.start - ((Dimension) o).start) < eps && Math.abs(this.end - ((Dimension) o).end) < eps) {
+                    if (Math.abs(Math.abs(this.start - this.end) - Math.abs(((Dimension) o).start - ((Dimension) o).end)) < eps) {
+                        if (Math.abs(this.center - ((Dimension) o).center) < eps) {
+                            return true;
+                        }
+                    }
                 } else {
                     return false;
                 }

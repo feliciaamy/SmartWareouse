@@ -31,6 +31,7 @@ import com.scandit.recognition.Barcode;
 import com.scandit.recognition.TrackedBarcode;
 
 import org.smartwarehouse.localization.MainActivity;
+import org.smartwarehouse.localization.Type;
 
 import java.lang.ref.WeakReference;
 import java.util.List;
@@ -58,6 +59,8 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
     private Button mBarcodeSplash = null;
     private UIHandler mHandler = null;
 
+    private Type type;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +68,13 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         mHandler = new UIHandler(this);
 
         ScanditLicense.setAppKey(sScanditSdkAppKey);
+        String sType = getIntent().getStringExtra("type");
+        Log.d("sType", sType);
+        if (sType.equals(Type.BINLABEL.toString())) {
+            type = Type.BINLABEL;
+        } else {
+            type = Type.BOX;
+        }
 
         // Initialize and start the bar code recognition.
         initializeAndStartBarcodeScanning();
@@ -152,19 +162,12 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
 
         // the maximum number of codes to be decoded every frame
         settings.setMaxNumberOfCodesPerFrame(6);
-        int[] symbologiesToEnable = new int[]{
-//                Barcode.SYMBOLOGY_CODE128
-//                Barcode.SYMBOLOGY_EAN13,
-//                Barcode.SYMBOLOGY_EAN8,
-//                Barcode.SYMBOLOGY_UPCA,
-//                Barcode.SYMBOLOGY_CODE39,
-//                Barcode.SYMBOLOGY_INTERLEAVED_2_OF_5,
-//                Barcode.SYMBOLOGY_UPCE,
-                Barcode.SYMBOLOGY_DATA_MATRIX
-        };
-        for (int sym : symbologiesToEnable) {
-            settings.setSymbologyEnabled(sym, true);
+        if (type == Type.BINLABEL) {
+            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE39, true);
+        } else {
+            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_DATA_MATRIX, true);
         }
+
 
         // Enable MatrixScan and set the max number of barcodes that can be recognized per frame
         // to some reasonable number for your use case. The max number of codes per frame does not
@@ -230,11 +233,11 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
             String data = "";
             for (Barcode b : allCodes) {
                 Log.d("Scandit barcode", b.getData());
-                data = data + b.getData() + ";";
+                data = data + b.getData();
             }
 
             Intent resultData = new Intent(this, MainActivity.class);
-            resultData.putExtra("barcodes",data);
+            resultData.putExtra("barcodes", data);
             setResult(Activity.RESULT_OK, resultData);
             session.stopScanning();
             session.clear();

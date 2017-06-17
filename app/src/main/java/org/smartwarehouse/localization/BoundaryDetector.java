@@ -18,30 +18,30 @@ import java.util.List;
 
 public class BoundaryDetector {
     // Colours
-    private final static Scalar LOWERTHRESHOLD = new Scalar(110, 100, 100); // Dull Red color – lower hsv values
-    private final static Scalar UPPERTHRESHOLD = new Scalar(120, 255, 255); // Dull Red color – higher hsv values
+    private final Scalar LOWERTHRESHOLD = new Scalar(110, 100, 100); // Dull Red color – lower hsv values
+    private final Scalar UPPERTHRESHOLD = new Scalar(120, 255, 255); // Dull Red color – higher hsv values
 
     // Mats
-    private static Mat mHsv = new Mat();
-    private static Mat mMaskMat = new Mat();
-    private static Mat mDilatedMat = new Mat();
+    private Mat mHsv = new Mat();
+    private Mat mMaskMat = new Mat();
+    private Mat mDilatedMat = new Mat();
 
     // Mat
-    private static Mat ImageMat;
+    private Mat ImageMat;
 
     // Found
-    private static List<Dimension> foundMarkers = new ArrayList<Dimension>();
-    private static List<Dimension> boundaries = new ArrayList<Dimension>();
-    private static List<Double> heights = new ArrayList<Double>();
-    private static List<Dimension> bottomMarkers = new ArrayList<Dimension>();
+    private List<Dimension> foundMarkers = new ArrayList<Dimension>();
+    private List<Dimension> boundaries = new ArrayList<Dimension>();
+    private List<Double> heights = new ArrayList<Double>();
+    private List<Dimension> bottomMarkers = new ArrayList<Dimension>();
 
-    private static Dimension bottomBoundary;
-    private static Dimension leftBoundary;
-    private static Dimension rightBoundary;
-    private static Dimension topBoundary;
+    private Dimension bottomBoundary;
+    private Dimension leftBoundary;
+    private Dimension rightBoundary;
+    private Dimension topBoundary;
 
     // Colors
-    private static final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};
+    private final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};
 
     public BoundaryDetector(Mat img) {
         this.ImageMat = img;
@@ -50,7 +50,7 @@ public class BoundaryDetector {
         findMarkers();
     }
 
-    private static void findMarkers() {
+    private void findMarkers() {
         Core.inRange(mHsv, LOWERTHRESHOLD, UPPERTHRESHOLD, mMaskMat);
 
         // erode and dilate
@@ -130,7 +130,7 @@ public class BoundaryDetector {
         }
     }
 
-    private static void filtering() {
+    private void filtering() {
         Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
         Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
         Imgproc.erode(mMaskMat, mDilatedMat, new Mat());
@@ -144,38 +144,38 @@ public class BoundaryDetector {
     }
 
     // Getters
-    public static Dimension getBottomBoundary() {
+    public Dimension getBottomBoundary() {
         return bottomBoundary;
     }
 
-    public static Dimension getTopBoundary() {
+    public Dimension getTopBoundary() {
         return topBoundary;
     }
 
-    public static Dimension getLeftBoundary() {
+    public Dimension getLeftBoundary() {
         return leftBoundary;
     }
 
-    public static Dimension getRightBoundary() {
+    public Dimension getRightBoundary() {
         return rightBoundary;
     }
 
-    public static List<Dimension> getMarkers() {
+    public List<Dimension> getMarkers() {
         return foundMarkers;
     }
 
-    public static List<Dimension> getBoundaries() {
+    public List<Dimension> getBoundaries() {
         return boundaries;
     }
 
-    public static List<Dimension> getBottomMarkers() {
+    public List<Dimension> getBottomMarkers() {
         Collections.sort(bottomMarkers, new Comparator<Dimension>() {
             public int compare(Dimension d1, Dimension d2) {
-                return Double.compare(d2.getX(), d1.getX());
+                return Double.compare(d1.getX(), d2.getX());
             }
         });
         for (Dimension d : bottomMarkers) {
-            Log.d("Sorted Bin Labels", d.toString());
+            Log.d("Sorted Bottom Markers", d.toString());
         }
         return bottomMarkers;
     }

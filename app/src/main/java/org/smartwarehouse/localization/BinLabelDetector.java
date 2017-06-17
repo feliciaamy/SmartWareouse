@@ -15,6 +15,8 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -98,6 +100,7 @@ public class BinLabelDetector {
         return eliminatedCentroids;
     }
 
+    // Return eliminated and sorted Bin Label
     private static List<Dimension> eliminateBinLabel(Dimension b, Dimension r, Dimension l) {
         List<Dimension> eliminatedLabels = new ArrayList<Dimension>();
 
@@ -116,6 +119,14 @@ public class BinLabelDetector {
                     eliminatedLabels.add(label);
                 }
             }
+        }
+        Collections.sort(eliminatedLabels, new Comparator<Dimension>() {
+            public int compare(Dimension d1, Dimension d2) {
+                return Double.compare(d1.getLeft(), d2.getLeft());
+            }
+        });
+        for (Dimension d : eliminatedLabels) {
+            Log.d("Sorted Bin Labels", d.toString());
         }
         return eliminatedLabels;
     }
