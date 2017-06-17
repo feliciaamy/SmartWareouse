@@ -86,26 +86,28 @@ public class BoxDetector {
     public static List<Dimension> getEliminatedBoxes(List<Dimension> boundaries) {
         List<Dimension> eliminatedBoxes = new ArrayList<Dimension>();
         double eps = 5;
+        boolean tolerate = false;
         for (Dimension box : boxes) {
             int score = 0;
             double x = (box.getRight() + box.getLeft()) / 2;
             double y = (box.getBottom() + box.getTop()) / 2;
             for (Dimension b : boundaries) {
                 if (b.getOrientation() == Orientation.HORIZONTAL) {
-                    if (y - b.getCenter() < eps) {
+                    tolerate = !tolerate;
+                    if (y - b.getCenter() < eps) { // Bottom Boundary
                         score -= 5;
-                    } else {
+                    } else { // Top Boundary
                         score += 5;
                     }
                 } else {
-                    if (x - b.getCenter() < eps) {
+                    if (x - b.getCenter() < eps) { // Right Boundary
                         score -= 1;
-                    } else {
+                    } else { // Left Boundary
                         score += 1;
                     }
                 }
             }
-            if (score == 0) {
+            if (score == 0 || tolerate && score == -5) {
                 eliminatedBoxes.add(box);
             }
         }
@@ -128,7 +130,7 @@ public class BoxDetector {
             double y = (box.getBottom() + box.getTop()) / 2;
             centroids.add(new Dimension(x, y, 20, Color.BLACK));
         }
-        if(centroids.size() != boxes.size()){
+        if (centroids.size() != boxes.size()) {
             Log.e("Centroid", "Wrong size");
         }
         return centroids;

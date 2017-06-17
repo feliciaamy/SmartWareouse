@@ -35,10 +35,10 @@ public class BoundaryDetector {
     private List<Double> heights = new ArrayList<Double>();
     private List<Dimension> bottomMarkers = new ArrayList<Dimension>();
 
-    private Dimension bottomBoundary;
-    private Dimension leftBoundary;
-    private Dimension rightBoundary;
-    private Dimension topBoundary;
+    private Dimension bottomBoundary = new Dimension(-1, -1, -1, Orientation.HORIZONTAL, Color.BLACK);
+    private Dimension leftBoundary = new Dimension(-1, -1, -1, Orientation.VERTICAL, Color.BLACK);
+    private Dimension rightBoundary = new Dimension(-1, -1, -1, Orientation.VERTICAL, Color.BLACK);
+    private Dimension topBoundary = new Dimension(-1, -1, -1, Orientation.HORIZONTAL, Color.BLACK);
 
     // Colors
     private final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};

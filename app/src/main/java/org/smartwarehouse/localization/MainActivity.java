@@ -412,7 +412,7 @@ public class MainActivity extends Activity {
                 Dimension rightBoundary = boundaryDetector.getRightBoundary();
                 Dimension leftBoundary = boundaryDetector.getLeftBoundary();
                 Dimension topBoundary = boundaryDetector.getTopBoundary();
-                if (bottomBoundary != null && topBoundary != null) {
+                if (bottomBoundary.getCenter() != -1 && topBoundary.getCenter() != -1) {
                     height = Math.abs(bottomBoundary.getCenter() - topBoundary.getCenter());
                 } else {
                     height = -1;
