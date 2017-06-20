@@ -291,7 +291,7 @@ public class MainActivity extends Activity {
             sendCoor("l0,\n");
             height = 0;
         }
-        sendCoor("z," + 0 + "," + (height * 0.8) + "\n");
+        sendCoor("z," + 0 + "," + (height * 1) + "\n");
         if (!receiveMessage().equals("1")) {
             return false;
         }
