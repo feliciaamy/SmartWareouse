@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
     // Variable
     private final int IMAGE_HEIGHT = 2916;
     private final int IMAGE_WIDTH = 5184;
-    private double height = 0;
+    private double height = 2103;
 
     // Reading Barcodes
     final int GET_BARCODE = 1;
@@ -160,13 +160,15 @@ public class MainActivity extends Activity {
 //                captureButton.performClick();
             }
         }, 3000);
+        Log.d("Time stamp", "Finish taking image");
 
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 close();
             }
-        }, 6000);
+        }, 5000);
+        Log.d("Time stamp", "Finish closing camera");
     }
 
     /**
@@ -417,19 +419,24 @@ public class MainActivity extends Activity {
                 } else {
                     height = -1;
                 }
+                Log.d("Time stamp", "Finish detecting boundaries");
 
                 // Bin Labels Detection
                 BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
                 List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary, rightBoundary, leftBoundary);
                 List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(binLabels);
+                Log.d("Time stamp", "Finish detecting labels");
 
                 // Boxes Detection
-                BoxDetector boxDetector = new BoxDetector(ImageMat);
+//                BoxDetector boxDetector = new BoxDetector(ImageMat);
+                Haar boxDetector = new Haar(ImageMat);
                 List<Dimension> labels = boxDetector.getEliminatedBoxes(boundaries);
                 List<Dimension> boxCentroids = boxDetector.getEliminatedCentroids(labels);
+                Log.d("Time stamp", "Finish detecting boxes");
 
                 // Create Queue
                 queue = createQueue(bottomMarkers, binLabelCentroids, boxCentroids);
+                Log.d("Time stamp", "Finish creating queue");
 
                 // Initial Setting
                 Canvas cnvs = new Canvas(resultBitmap);
@@ -483,9 +490,11 @@ public class MainActivity extends Activity {
 //                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
                 }
 
+                Log.d("Time stamp", "Finish drawing");
                 Log.d("Data", data);
                 mImageView.setImageBitmap(resultBitmap);
-                storeImage(resultBitmap);
+                Log.d("Time stamp", "Finish setting image view");
+//                storeImage(resultBitmap);boxd
             }
         }
         return queue;
@@ -509,7 +518,9 @@ public class MainActivity extends Activity {
                             temp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
                             Log.d("Add box", box.toString());
                             boxCentroids.remove(0);
-                        } else {
+                        } else if(box.getX() < bottomMarkers.get(i).getX()) {
+                            boxCentroids.remove(0);
+                        } else{
                             break;
                         }
                     }
@@ -691,7 +702,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void storeImage(Bitmap image) {
+    public static void storeImage(Bitmap image) {
         File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
         if (pictureFile == null) {
             Log.d(TAG,

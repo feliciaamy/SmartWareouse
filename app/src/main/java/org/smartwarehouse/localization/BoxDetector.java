@@ -1,8 +1,10 @@
 package org.smartwarehouse.localization;
 
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.util.Log;
 
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -44,23 +46,26 @@ public class BoxDetector {
 
         final List<Float> ratio = new ArrayList<>();
         for (int i = 0; i < coordinates.size(); i++) {
-            if (Imgproc.contourArea(coordinates.get(i)) > 50000 && Imgproc.contourArea(coordinates.get(i)) < 200000) {
+            if (Imgproc.contourArea(coordinates.get(i)) > 30000 && Imgproc.contourArea(coordinates.get(i)) < 300000) {
+//            if (Imgproc.contourArea(coordinates.get(i)) > 20000 && Imgproc.contourArea(coordinates.get(i)) < 700000) {
                 Rect rect = Imgproc.boundingRect(coordinates.get(i));
 
                 float ratiod = ((float) rect.height / (float) rect.width);
                 if (0.4 < ratiod && ratiod < 0.55) {
                     // Drawing of rectangle
                     boxes.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.GREEN));
-                    Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
+//                    Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
                     Moments moments = Imgproc.moments(coordinates.get(i));
                     final Point centroid = new Point();
                     centroid.x = moments.get_m10() / moments.get_m00();
                     centroid.y = moments.get_m01() / moments.get_m00();
                     centroids.add(new Dimension(centroid.x, centroid.y, 20, Color.BLACK));
                     Log.d("(Drawn) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
-                } else {
-                    Log.d("Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
+                } else{
+                    Log.d("(Wrong) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
                 }
+            } else {
+                Log.d("Area: ", "" + Imgproc.contourArea(coordinates.get(i)));
             }
         }
     }
@@ -68,15 +73,24 @@ public class BoxDetector {
     private static void filtering() {
         Core.bitwise_not(ImageMat, filteredMat);
         Imgproc.cvtColor(filteredMat, filteredMat, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.threshold(filteredMat, filteredMat, 115, 255, Imgproc.THRESH_BINARY);
+//        Imgproc.threshold(filteredMat, filteredMat, 115, 255, Imgproc.THRESH_BINARY);
+        Imgproc.threshold(filteredMat, filteredMat, 90, 255, Imgproc.THRESH_BINARY);
+        Bitmap thres = Bitmap.createBitmap(filteredMat.cols(), filteredMat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(filteredMat, thres);
+        MainActivity.storeImage(thres);
 
         Size size1 = new Size(9, 5); // 2,2 // the smaller, the smaller the area of the rect
         Size size2 = new Size(1, 1); //1,1
 
+//        Size size1 = new Size(2, 5); // 2,2 // the smaller, the smaller the area of the rect
+//        Size size2 = new Size(1, 1); //1,1
+
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size1);
         Mat kernel2 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size2);
         Imgproc.erode(filteredMat, filteredMat, kernel2);
+
         Imgproc.dilate(filteredMat, filteredMat, kernel);
+
         Imgproc.erode(filteredMat, filteredMat, kernel2);
         Core.bitwise_not(filteredMat, filteredMat);
     }

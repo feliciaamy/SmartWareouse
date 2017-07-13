@@ -46,7 +46,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
 
     // Enter your Scandit SDK App key here.
     // Your Scandit SDK App key is available via your Scandit SDK web account.
-    public static final String sScanditSdkAppKey = "AQv6KBxCBqX8AtyImS1VVZclZ7c8B2yBZnlufdx6E1RINZrcOyXvmFN3YLkSFDx5AFRKm817IAcwAyr3Z2+aQ15cLFQJT0PSaDn3caVDcES0dXB5bHvgR5gEoQR/ES3emLEj3EuS5aR8lnuKji/8HBPrFYfidewhjSIvKTO9flo5/vA/5qE8C6kUkdW3/DXFgPJlMeXSYgDtDxM+fM/mC4+RxFT4Qg2tlOp0EISlTBxPeYJE6Xz7qUUx6tkHy6PwzBMpGqPTZqYUi3Jui2VqfkrqVCi9RtRrY6we3H1MeENjmY+T2pb2ouP0fWbhlxNhBrufiNDedWckUg7I5uOTbKs5plSTG3B60+hETQ7KRHkwY9OBqYhGO1pBmtLv2C2/MLD/H4aJDV7h8WlRugNnCL6mAZcYoYbedewFMgaNyK0pY94pAczvwR5atVvyOvdp+iDfsMyRC7lOwChkWQKdaCEyWasmraazkCGnuD/KNL+Gd9nj6V9xY0jTxl27NVAD6dXxdDsWWPifG5xCMODHR0BD6rx36j2VCd1ufFRC/Yx9Idy1ZjWjDiPpqhkGWUUZgNcsNuZP5KXO0j1AJbJ/DZavCwCtqU0uO++f3S/TuXAs6bKcWR1TusH1gtPQmsOinQGdE/eZNXVVWZr5a75UgtAmARiaOnW/tly8WaTPlTvo6Ab8Jm1hiF3W/s855inRT1ZYqz7sbhKgnl0xhkdGaJdy+dBcX63zj9m27rJyj6aGhPP1tG7vi8Hkf7vejYEjrQ1sR2tj19LyQMt5vPh6Zp4fDmCFlBrgxUzgno0=";
+    public static final String sScanditSdkAppKey = "AWv6LTpvIAfOHM7GrgECOZo2+u5sIIwqmgoShP9SsP/NAw/MUgH23MZopSOlUefNKXQqqMhFQVEcRBaxhHPvqXpUeyJvVkUnNSfqScJjByBseJina21nIAk5YEf5jCLQ5dOtrUmh28y/2Q4oSDCvBkM/XNal3vW3cgFauDRnAZV9VoOMO0+v84el1j7hBhsvNsQ2Z8ZcBpG/T/VBJjhJ3EqfaR/Oz3iWHgnSJoiHBSUXT68uqzv37rmfIUYuPwOnquY72Xg2x1Pg+PwATU/HmoZ5DFVkAu0YehXFU6OvXBOpstW0MqOfith7IY1kaePRTv9BLmcKT3ZCi8Q8qRBunFP375JEcSmQ4C+tz/NaAP/UGh9NBstNqGdM/3IEUuMwv8/2GMIC77ihuj/cN75ZSewjYEmIFisXl8WhNl1jEN1SVDz+m8qDXsfQI1SvcwlzrruAoLxakdVcPfSF174/e0f8MLpLh7KXiBN6eItt1J9e5rufLp///5b2fJSPzjil/NXvRMapwNWkH4leMtErb9JtBHccowsvkd0KZEYwwlNPtrkf9RfwhaSdZOxY/ZsqD1EE/dPFXKBmKAP1zA+6zVQyhj65TtEY99rI2qUCvUZFUftIZsP/65V9i6fWc9KYBc2uFxXqcJPUIvxt2Z6kYZlHeRGph4HvCz8r212ohaHNhDIMxczs+JpCnHpu4BZpN6GQsrVTklH5/Lp5im+YjXP3uKRVxP/MI+qO3lbRaBqmz0f/+kdDO78/Hlio9lHPwgwnZgzF4IdD9JjlieOaMdzZ0jceN1c6hdol048=";
 
     private final int CAMERA_PERMISSION_REQUEST = 0;
 
@@ -165,7 +165,8 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         if (type == Type.BINLABEL) {
             settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE39, true);
         } else {
-            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_DATA_MATRIX, true);
+//            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_DATA_MATRIX, true);
+            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE128, true);
         }
 
 

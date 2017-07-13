@@ -57,7 +57,7 @@ public class BinLabelDetector {
                     centroid.y = moments.get_m01() / moments.get_m00();
                     centroids.add(new Dimension(centroid.x, centroid.y, 20, Color.BLACK));
                     potentialLabels.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.MAGENTA));
-                    Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
+//                    Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
                 }
             }
         }
