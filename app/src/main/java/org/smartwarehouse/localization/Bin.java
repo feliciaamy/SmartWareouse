@@ -73,4 +73,8 @@ public class Bin {
         }
         return data;
     }
+
+    public Map<Coordinate, Barcodes> getBoxesBarcodes(){
+        return boxesBarcodes;
+    }
 }

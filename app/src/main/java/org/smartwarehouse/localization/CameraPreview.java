@@ -40,31 +40,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+            parameters.setZoom(0);
             mCamera.setParameters(parameters);
+            Log.d("ZOOM", parameters.getZoom() + "");
 //            mCamera.startPreview();
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
-//            Camera.PictureCallback jpgCallback = new Camera.PictureCallback()
-//            {
-//                public void onPictureTaken(byte[] data, Camera camera)
-//                {
-//                    try
-//                    {
-////                        Dialog d=new Dialog();
-////                        d.setContentView(0x7f030000);
-//                        Log.d("Take photo", "Successful");
-//                        BitmapFactory.Options opts = new BitmapFactory.Options();
-//                        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length,opts);
-////                        d.show();
-//                    }
-//                    catch(Exception e)
-//                    {
-//                        Log.d("Take photo", "Unsuccessful");
-//                    }
-//                }
-//
-//            };
-//            mCamera.takePicture(null, null, jpgCallback);
 
         } catch (IOException e) {
             Log.d(TAG, "Error setting camera preview: " + e.getMessage());
@@ -100,10 +81,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         try {
             Camera.Parameters parameters = mCamera.getParameters();
             parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+            parameters.setZoom(0);
+            Log.d("ZOOM", parameters.getZoom() + "");
             mCamera.setParameters(parameters);
 //            mCamera.startPreview();
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
+
 
         } catch (Exception e) {
             Log.d(TAG, "Error starting camera preview: " + e.getMessage());
@@ -131,7 +115,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
-        final double ASPECT_TOLERANCE = 0.0;
+        final double ASPECT_TOLERANCE = 0.3;
         double targetRatio = (double) h / w;
 
         if (sizes == null)
@@ -162,7 +146,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                 }
             }
         }
-
+        Log.d("SIZE", optimalSize + "");
         return optimalSize;
     }
 

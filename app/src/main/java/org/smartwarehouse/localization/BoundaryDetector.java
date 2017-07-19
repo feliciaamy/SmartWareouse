@@ -10,6 +10,9 @@ import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
+import org.smartwarehouse.object.Boundary;
+import org.smartwarehouse.object.Centroid;
+import org.smartwarehouse.object.Orientation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,15 +33,15 @@ public class BoundaryDetector {
     private Mat ImageMat;
 
     // Found
-    private List<Dimension> foundMarkers = new ArrayList<Dimension>();
-    private List<Dimension> boundaries = new ArrayList<Dimension>();
+    private List<Centroid> foundMarkers = new ArrayList<Centroid>();
+    private List<Boundary> boundaries = new ArrayList<Boundary>();
     private List<Double> heights = new ArrayList<Double>();
-    private List<Dimension> bottomMarkers = new ArrayList<Dimension>();
+    private List<Centroid> bottomMarkers = new ArrayList<Centroid>();
 
-    private Dimension bottomBoundary = new Dimension(-1, -1, -1, Orientation.HORIZONTAL, Color.BLACK);
-    private Dimension leftBoundary = new Dimension(-1, -1, -1, Orientation.VERTICAL, Color.BLACK);
-    private Dimension rightBoundary = new Dimension(-1, -1, -1, Orientation.VERTICAL, Color.BLACK);
-    private Dimension topBoundary = new Dimension(-1, -1, -1, Orientation.HORIZONTAL, Color.BLACK);
+    private Boundary bottomBoundary = new Boundary(-1, -1, -1, Orientation.HORIZONTAL, Color.BLACK);
+    private Boundary leftBoundary = new Boundary(-1, -1, -1, Orientation.VERTICAL, Color.BLACK);
+    private Boundary rightBoundary = new Boundary(-1, -1, -1, Orientation.VERTICAL, Color.BLACK);
+    private Boundary topBoundary = new Boundary(-1, -1, -1, Orientation.HORIZONTAL, Color.BLACK);
 
     // Colors
     private final int[] colors = {Color.RED, Color.BLUE, Color.GREEN};
@@ -90,9 +93,9 @@ public class BoundaryDetector {
             if (height >= 0) {
                 if (Math.abs(detected.get(i).y - height) > 300) {
                     if (boundaries.isEmpty()) {
-                        topBoundary = new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN);
+                        topBoundary = new Boundary(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN);
                     }
-                    boundaries.add(new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN));
+                    boundaries.add(new Boundary(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, Color.CYAN));
                     heights.add(tempSum / tempCount);
                     bottomMarkers.clear();
                     maxX = minX = detected.get(i).x;
@@ -109,12 +112,12 @@ public class BoundaryDetector {
             }
 
             height = detected.get(i).y;
-            bottomMarkers.add(new Dimension(detected.get(i).x, detected.get(i).y, 50, colors[c]));
-            foundMarkers.add(new Dimension(detected.get(i).x, detected.get(i).y, 50, colors[c]));
+            bottomMarkers.add(new Centroid(detected.get(i).x, detected.get(i).y, 50, colors[c]));
+            foundMarkers.add(new Centroid(detected.get(i).x, detected.get(i).y, 50, colors[c]));
             tempCount++;
             tempSum += height;
         }
-        bottomBoundary = new Dimension(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, colors[c]);
+        bottomBoundary = new Boundary(minX, maxX, tempSum / tempCount, Orientation.HORIZONTAL, colors[c]);
         boundaries.add(bottomBoundary);
 
         heights.add(tempSum / tempCount);
@@ -122,10 +125,10 @@ public class BoundaryDetector {
         // Last set of markers are the lowest
         if (heights.size() > 0) {
             // left
-            leftBoundary = new Dimension(heights.get(0), heights.get(heights.size() - 1), minX, Orientation.VERTICAL, Color.CYAN);
+            leftBoundary = new Boundary(heights.get(0), heights.get(heights.size() - 1), minX, Orientation.VERTICAL, Color.CYAN);
             boundaries.add(leftBoundary);
             // right
-            rightBoundary = new Dimension(heights.get(0), heights.get(heights.size() - 1), maxX, Orientation.VERTICAL, Color.CYAN);
+            rightBoundary = new Boundary(heights.get(0), heights.get(heights.size() - 1), maxX, Orientation.VERTICAL, Color.CYAN);
             boundaries.add(rightBoundary);
         }
     }
@@ -137,44 +140,44 @@ public class BoundaryDetector {
     }
 
     private void clear() {
-        foundMarkers = new ArrayList<Dimension>();
-        boundaries = new ArrayList<Dimension>();
+        foundMarkers = new ArrayList<Centroid>();
+        boundaries = new ArrayList<Boundary>();
         heights = new ArrayList<Double>();
-        bottomMarkers = new ArrayList<Dimension>();
+        bottomMarkers = new ArrayList<Centroid>();
     }
 
     // Getters
-    public Dimension getBottomBoundary() {
+    public Boundary getBottomBoundary() {
         return bottomBoundary;
     }
 
-    public Dimension getTopBoundary() {
+    public Boundary getTopBoundary() {
         return topBoundary;
     }
 
-    public Dimension getLeftBoundary() {
+    public Boundary getLeftBoundary() {
         return leftBoundary;
     }
 
-    public Dimension getRightBoundary() {
+    public Boundary getRightBoundary() {
         return rightBoundary;
     }
 
-    public List<Dimension> getMarkers() {
+    public List<Centroid> getMarkers() {
         return foundMarkers;
     }
 
-    public List<Dimension> getBoundaries() {
+    public List<Boundary> getBoundaries() {
         return boundaries;
     }
 
-    public List<Dimension> getBottomMarkers() {
-        Collections.sort(bottomMarkers, new Comparator<Dimension>() {
-            public int compare(Dimension d1, Dimension d2) {
+    public List<Centroid> getBottomMarkers() {
+        Collections.sort(bottomMarkers, new Comparator<Centroid>() {
+            public int compare(Centroid d1, Centroid d2) {
                 return Double.compare(d1.getX(), d2.getX());
             }
         });
-        for (Dimension d : bottomMarkers) {
+        for (Centroid d : bottomMarkers) {
             Log.d("Sorted Bottom Markers", d.toString());
         }
         return bottomMarkers;

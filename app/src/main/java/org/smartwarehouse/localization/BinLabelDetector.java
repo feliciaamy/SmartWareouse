@@ -9,10 +9,11 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
+import org.smartwarehouse.object.*;
+import org.smartwarehouse.object.Orientation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,8 +29,8 @@ public class BinLabelDetector {
     private static Mat filteredMat = new Mat();
 
     // Found
-    private static List<Dimension> potentialLabels = new ArrayList<Dimension>();
-    private static List<Dimension> centroids = new ArrayList<Dimension>();
+    private static List<Label> potentialLabels = new ArrayList<Label>();
+    private static List<Centroid> centroids = new ArrayList<Centroid>();
 
 
     public BinLabelDetector(Mat img) {
@@ -55,21 +56,50 @@ public class BinLabelDetector {
                     final Point centroid = new Point();
                     centroid.x = moments.get_m10() / moments.get_m00();
                     centroid.y = moments.get_m01() / moments.get_m00();
-                    centroids.add(new Dimension(centroid.x, centroid.y, 20, Color.BLACK));
-                    potentialLabels.add(new Dimension(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.MAGENTA));
+                    centroids.add(new Centroid(centroid.x, centroid.y, 20, Color.BLACK));
+                    potentialLabels.add(new Label(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.MAGENTA));
 //                    Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
                 }
             }
         }
     }
 
-    public static List<Dimension> getPotentialLabels() {
+    public static List<Label> getPotentialLabels() {
         return potentialLabels;
     }
 
-    public static List<Dimension> getEliminatedLabels(Dimension bottom, Dimension right, Dimension left) {
-        return eliminateBinLabel(bottom, right, left);
+    public static List<Label> getEliminatedLabels(Boundary b, Boundary r, Boundary l) {
+        List<Label> eliminatedLabels = new ArrayList<Label>();
+
+        Log.d("Boundary", b.toString());
+        if (b.getOrientation() == org.smartwarehouse.object.Orientation.VERTICAL) {
+            Log.d("ORIENTATION ERROR", "wrong orientation");
+        }
+        if (r.getOrientation() == org.smartwarehouse.object.Orientation.HORIZONTAL || l.getOrientation() == Orientation.HORIZONTAL) {
+            Log.d("ORIENTATION ERROR", "wrong orientation");
+        }
+        for (Label label : potentialLabels) {
+            Log.d("label", label.toString());
+            if (isInLine(label, b)) {
+                if (label.getLeft() > l.getCenter() && label.getRight() < r.getCenter()) {
+                    Log.d("Correct label", label.toString());
+                    if (!eliminatedLabels.contains(label)){
+                        eliminatedLabels.add(label);
+                    }
+                }
+            }
+        }
+        Collections.sort(eliminatedLabels, new Comparator<Label>() {
+            public int compare(Label d1, Label d2) {
+                return Double.compare(d1.getLeft(), d2.getLeft());
+            }
+        });
+        for (Label d : eliminatedLabels) {
+            Log.d("Sorted Bin Labels", d.toString());
+        }
+        return eliminatedLabels;
     }
+
 
     private static void filtering() {
         Mat filteredMatX = new Mat();
@@ -89,60 +119,28 @@ public class BinLabelDetector {
         Imgproc.dilate(filteredMat, filteredMat, kernel);
     }
 
-    public static List<Dimension> getEliminatedCentroids(List<Dimension> binLabels) {
-        List<Dimension> eliminatedCentroids = new ArrayList<Dimension>();
-        for (Dimension label : binLabels) {
+    public static List<Centroid> getEliminatedCentroids(List<Label> binLabels) {
+        List<Centroid> eliminatedCentroids = new ArrayList<Centroid>();
+        for (Label label : binLabels) {
             double x = (label.getRight() + label.getLeft()) / 2;
             double y = (label.getBottom() + label.getTop()) / 2;
-            eliminatedCentroids.add(new Dimension(x, y, 20, Color.BLACK));
+            eliminatedCentroids.add(new Centroid(x, y, 20, Color.BLACK));
         }
 
         return eliminatedCentroids;
     }
 
-    // Return eliminated and sorted Bin Label
-    private static List<Dimension> eliminateBinLabel(Dimension b, Dimension r, Dimension l) {
-        List<Dimension> eliminatedLabels = new ArrayList<Dimension>();
+    private static boolean isInLine(Label label, Boundary boundary) {
+        double height = Math.abs(label.getTop() - label.getBottom());
+        if (Math.abs((label.getTop() + label.getBottom()) / 2 - boundary.getCenter()) < height * 2) {
+            return true;
+        }
 
-        Log.d("Boundary", b.toString());
-        if (b.getOrientation() == Orientation.VERTICAL) {
-            Log.d("ORIENTATION ERROR", "wrong orientation");
-        }
-        if (r.getOrientation() == Orientation.HORIZONTAL || l.getOrientation() == Orientation.HORIZONTAL) {
-            Log.d("ORIENTATION ERROR", "wrong orientation");
-        }
-        for (Dimension label : potentialLabels) {
-            Log.d("label", label.toString());
-            if (isInLine(label, b)) {
-                if(label.getLeft() > l.getCenter() && label.getRight() < r.getCenter()){
-                    Log.d("Correct label", label.toString());
-                    eliminatedLabels.add(label);
-                }
-            }
-        }
-        Collections.sort(eliminatedLabels, new Comparator<Dimension>() {
-            public int compare(Dimension d1, Dimension d2) {
-                return Double.compare(d1.getLeft(), d2.getLeft());
-            }
-        });
-        for (Dimension d : eliminatedLabels) {
-            Log.d("Sorted Bin Labels", d.toString());
-        }
-        return eliminatedLabels;
-    }
-
-    private static boolean isInLine(Dimension label, Dimension line) {
-        if (line.getShape() == Shape.LINE && label.getShape() == Shape.RECTANGLE) {
-            double height = Math.abs(label.getTop() - label.getBottom());
-            if (Math.abs((label.getTop() + label.getBottom()) / 2 - line.getCenter()) < height * 2) {
-                return true;
-            }
-        }
         return false;
     }
 
     private void clear() {
-        potentialLabels = new ArrayList<Dimension>();
+        potentialLabels = new ArrayList<Label>();
         filteredMat = new Mat();
     }
 }

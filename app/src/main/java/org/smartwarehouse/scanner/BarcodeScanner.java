@@ -157,16 +157,23 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         // In your own apps, only enable the symbologies you actually need.
         ScanSettings settings = ScanSettings.create();
         // if they match an already decoded barcode in the session
-        settings.setRelativeZoom(0.8f);
+//        settings.setRelativeZoom(0.9f);
         settings.setCodeDuplicateFilter(-1);
 
         // the maximum number of codes to be decoded every frame
         settings.setMaxNumberOfCodesPerFrame(6);
         if (type == Type.BINLABEL) {
-            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE39, true);
-        } else {
-//            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_DATA_MATRIX, true);
             settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE128, true);
+            settings.setRelativeZoom(0.9f);
+            Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());
+
+        } else {
+            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_DATA_MATRIX, true);
+
+            settings.setRelativeZoom(0.9f);
+            Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());
+
+//            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE128, true);
         }
 
 
@@ -180,9 +187,6 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         settings.setRestrictedAreaScanningEnabled(true);
         // Prefer the back-facing camera, if there is any.
         settings.setCameraFacingPreference(ScanSettings.CAMERA_FACING_BACK);
-        Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());
-        settings.setRelativeZoom(0.8f);
-        Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());
 
         // Some Android 2.3+ devices do not support rotated camera feeds. On these devices, the
         // barcode picker emulates portrait mode by rotating the scan UI.

@@ -8,16 +8,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Camera;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
-import android.view.View;
 import android.view.Window;
-import android.widget.Button;
 import android.widget.FrameLayout;
 
 import org.smartwarehouse.R;
+import org.smartwarehouse.object.*;
 import org.smartwarehouse.scanner.BarcodeScanner;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -33,7 +31,6 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 import android.os.Handler;
@@ -47,6 +44,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.os.AsyncTask;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -55,14 +55,31 @@ import java.util.regex.Pattern;
 import static android.content.ContentValues.TAG;
 
 /**
- * Created by Amy on 20/5/17.
+ * <h1>Smart Warehouse</h1>
+ * This program is to support the scanning and controlling
+ * function of our inventory count device.
+ * The code will start with connecting the phone with the bluetooth
+ * of the device. After the connection is settled, a picture of the
+ * shelf will be taken and processed to attain all the bin labels and boxes
+ * in the shelf. With the bin labels and boxes coordinate, the phone will
+ * send a command (in the form of coordinate) to the device, so that the
+ * dual axis can move to the expected location that allows the phone
+ * to scan the label accordingly.
+ * <p>
+ *
+ * @author Felicia Amy
+ * @author Ryan Lim
+ * @version 1.0
+ * @since 2017-05-31
  */
 
 public class MainActivity extends Activity {
+    private String aisle = "AA";
+    private int partition = 0;
     // Variable
     private final int IMAGE_HEIGHT = 2916;
     private final int IMAGE_WIDTH = 5184;
-    private double height = 2103;
+    private double height = 0;//2103;
 
     // Reading Barcodes
     final int GET_BARCODE = 1;
@@ -122,9 +139,17 @@ public class MainActivity extends Activity {
         startScanning();
     }
 
+    /**
+     * The main method of this activity that start the scanning
+     * process by taking picture of the shelf first.
+     *
+     * @return Nothing.
+     */
     private void startScanning() {
         if (!isPrinterReady()) {
-            Log.e("3D printer", "is not set");
+            Log.e("Dual Axis", "is not set");
+        } else {
+            Log.d("Dual Axis", "is ready");
         }
         checkCameraHardware(this);
         setContentView(R.layout.camera_localization);
@@ -142,6 +167,8 @@ public class MainActivity extends Activity {
         } else {
             Log.e("AUTO FOCUS", "doesn't work");
         }
+        params.setZoom(0);
+        Log.d("ZOOM", params.getZoom() + "");
         mCamera.setParameters(params);
 
         // Create our Preview view and set it as the content of our activity.
@@ -172,7 +199,11 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Check if this device has a camera
+     * Check if this device has a camera, return true if there is
+     * and false otherwise
+     *
+     * @param context
+     * @return boolean
      */
     private boolean checkCameraHardware(Context context) {
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
@@ -186,7 +217,10 @@ public class MainActivity extends Activity {
 
     /**
      * A safe way to get an instance of the Camera object.
+     *
+     * @return Camera
      */
+
     public static Camera getCameraInstance() {
         Camera c = null;
         try {
@@ -198,14 +232,10 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Create a file Uri for saving an image or video
-     */
-    private static Uri getOutputMediaFileUri(int type) {
-        return Uri.fromFile(getOutputMediaFile(type));
-    }
-
-    /**
-     * Create a File for saving an image or video
+     * Create a File for saving an image or video.
+     * The file is created in the internal storage /Picture/shelves.
+     *
+     * @return File
      */
     private static File getOutputMediaFile(int type) {
         // To be safe, you should check that the SDCard is mounted
@@ -236,10 +266,12 @@ public class MainActivity extends Activity {
         } else {
             return null;
         }
-
         return mediaFile;
     }
 
+    /**
+     * Safely close the camera.
+     */
     private void close() {
         mPreview.stopPreviewAndFreeCamera();
         queue = processData(lastPictureTaken);
@@ -251,12 +283,191 @@ public class MainActivity extends Activity {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-//                captureButton.performClick();
             }
         }, 2000);
-
     }
 
+    /**
+     * Detect the boxes, bin labels, markers, and boundaries
+     * in the image from the file and return a list of clustered bins.
+     * It will also draw the detected objects in the canvas that will
+     * be set in the ImageView after it finishes processing the image.
+     *
+     * @param file
+     * @return List<Bin>
+     * @see Bin
+     * @see BoundaryDetector
+     * @see BoxDetector
+     * @see BinLabelDetector
+     * @see ImageView
+     */
+    private List<Bin> processData(File file) {
+//        List<Coordinate> coordinates = new ArrayList<Coordinate>();
+        List<Bin> queue = new ArrayList<>();
+
+        // Code
+        Bitmap bitmap = BitmapFactory.decodeFile(file.toString());
+
+        Mat ImageMat = new Mat();
+        Bitmap resultBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Utils.bitmapToMat(resultBitmap, ImageMat);
+
+        mPreview.stopPreviewAndFreeCamera();
+        setContentView(R.layout.templatematching);
+
+        mImageView = (ImageView) findViewById(R.id.imageView);
+        mImageView.setImageResource(android.R.color.transparent);
+
+        boolean done = false;
+        while (!done) {
+            if (mImageView.isShown()) {
+                done = true;
+                // Boundary Detection
+                BoundaryDetector boundaryDetector = new BoundaryDetector(ImageMat);
+                List<Centroid> foundMarkers = boundaryDetector.getMarkers();
+                List<Boundary> boundaries = boundaryDetector.getBoundaries();
+                List<Centroid> bottomMarkers = boundaryDetector.getBottomMarkers();
+                Boundary bottomBoundary = boundaryDetector.getBottomBoundary();
+                Boundary rightBoundary = boundaryDetector.getRightBoundary();
+                Boundary leftBoundary = boundaryDetector.getLeftBoundary();
+                Boundary topBoundary = boundaryDetector.getTopBoundary();
+                if (bottomBoundary.getCenter() != -1 && topBoundary.getCenter() != -1) {
+                    height = Math.abs(bottomBoundary.getCenter() - topBoundary.getCenter());
+                } else {
+                    height = -1;
+                }
+                Log.d("Time stamp", "Finish detecting boundaries");
+
+                // Bin Labels Detection
+                BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
+                List<Label> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary, rightBoundary, leftBoundary);
+                List<Centroid> binLabelCentroids = binLabelDetector.getEliminatedCentroids(binLabels);
+                Log.d("Time stamp", "Finish detecting labels");
+
+                // Boxes Detection
+                BoxDetector boxDetector = new BoxDetector(ImageMat, Algorithm.HAAR);
+                List<Label> labels = boxDetector.getEliminatedBoxes(topBoundary, bottomBoundary, rightBoundary, leftBoundary);
+                List<Centroid> boxCentroids = boxDetector.getEliminatedCentroids(labels);
+                Log.d("Time stamp", "Finish detecting boxes");
+
+                // Create Queue
+                queue = createQueue(bottomMarkers, binLabelCentroids, boxCentroids);
+                Log.d("Time stamp", "Finish creating queue");
+
+                // Initial Setting
+                Canvas cnvs = new Canvas(resultBitmap);
+                cnvs.drawBitmap(resultBitmap, 0, 0, null);
+                Paint paintStroke = new Paint();
+                Paint paintFill = new Paint();
+                paintStroke.setStyle(Paint.Style.STROKE);
+                paintStroke.setStrokeWidth(20f);
+
+                // Drawing markers
+                for (Centroid d : foundMarkers) {
+                    Log.d("Dimension", d.toString());
+                    paintFill.setColor(d.getColor());
+                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
+                }
+
+                // Drawing Lines
+                for (Boundary d : boundaries) {
+                    Log.d("Dimension", d.toString());
+                    paintStroke.setColor(d.getColor());
+                    if (d.getOrientation() == Orientation.HORIZONTAL) {
+                        cnvs.drawLine((float) d.getStart(), (float) d.getCenter(), (float) d.getEnd(), (float) d.getCenter(), paintStroke);
+                    } else if (d.getOrientation() == Orientation.VERTICAL) {
+                        cnvs.drawLine((float) d.getCenter(), (float) d.getStart(), (float) d.getCenter(), (float) d.getEnd(), paintStroke);
+                    }
+                }
+
+                // Drawing Bin Labels
+                for (Label d : binLabels) {
+                    paintStroke.setColor(d.getColor());
+                    cnvs.drawRect((float) d.getLeft(), (float) d.getTop(), (float) d.getRight(), (float) d.getBottom(), paintStroke);
+                }
+                // Drawing Boxes' Labels
+                for (Label d : labels) {
+                    paintStroke.setColor(d.getColor());
+                    cnvs.drawRect((float) d.getLeft(), (float) d.getTop(), (float) d.getRight(), (float) d.getBottom(), paintStroke);
+                }
+                // Drawing centroids
+                String data = "";
+                for (Centroid d : boxCentroids) {
+                    paintFill.setColor(d.getColor());
+                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
+                    data = data + d.getX() + "," + d.getY() + ";";
+//                    coordinates.add(new Coordinate(Type.BOX, d.getX(), d.getY()));
+                }
+
+                for (Centroid d : binLabelCentroids) {
+                    paintFill.setColor(d.getColor());
+                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
+                    data = data + d.getX() + "," + d.getY() + ";";
+//                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
+                }
+
+                Log.d("Time stamp", "Finish drawing");
+                Log.d("Data", data);
+                mImageView.setImageBitmap(resultBitmap);
+                Log.d("Time stamp", "Finish setting image view");
+//                storeImage(resultBitmap);
+            }
+        }
+        return queue;
+    }
+
+    /**
+     * Given the markers, bin labels, and boxes, this method will
+     * create a queue of bins where a bin is defined when there are
+     * two markers and a bin label between them, and the boxes on top
+     * of that region are belong to that bin.
+     *
+     * @param bottomMarkers     The bottom most set of markers.
+     * @param binLabelCentroids The centroid of bin labels that are in line with the bottom boundary.
+     * @param boxCentroids      The boxes found within the boundaries (left, right, top, bottom).
+     * @return List<Bin>
+     */
+    private List<Bin> createQueue(List<Centroid> bottomMarkers, List<Centroid> binLabelCentroids,
+                                  List<Centroid> boxCentroids) {
+        List<Bin> queue = new ArrayList<>();
+
+        for (int i = 0; i < bottomMarkers.size() - 1; i++) {
+            List<Coordinate> temp = new ArrayList<>();
+            if (!binLabelCentroids.isEmpty()) {
+                Centroid binLabel = binLabelCentroids.get(0);
+                Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
+                Log.d("Queue Binlabel", binLabel.toString());
+                if (binLabel.getX() > bottomMarkers.get(i).getX() && binLabel.getX() < bottomMarkers.get(i + 1).getX()) {
+                    binLabelCentroids.remove(0);
+                    while (!boxCentroids.isEmpty()) {
+                        Centroid box = boxCentroids.get(0);
+                        if (box.getX() > bottomMarkers.get(i).getX() && box.getX() < bottomMarkers.get(i + 1).getX()) {
+                            temp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
+                            Log.d("Add box", box.toString());
+                            boxCentroids.remove(0);
+                        } else if (box.getX() < bottomMarkers.get(i).getX()) {
+                            boxCentroids.remove(0);
+                        } else {
+                            break;
+                        }
+                    }
+                    queue.add(new Bin(new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY()), temp));
+                }
+            } else {
+                break;
+            }
+        }
+
+        Log.d("Queue", "Size: " + queue.size());
+        for (Bin bin : queue) {
+            Log.d("QUEUE", bin.toString());
+        }
+        return queue;
+    }
+
+    /**
+     * A method to arrange the order of labels to be scanned.
+     */
     private void queueing() {
         if (!queue.isEmpty() || currentBin != null) {
             if (currentBin == null) {
@@ -284,59 +495,63 @@ public class MainActivity extends Activity {
             currentCoor = null;
 
             startScanning();
+            Log.d("Output", toJson());
+            partition++;
         }
     }
 
+    /**
+     * This method will return true if the dual axis is
+     * in the correct height and centered.
+     *
+     * @return boolean
+     */
     private boolean isPrinterReady() {
         // Zeroing 3D printer
         if (height == -1) {
-            sendCoor("l0,\n");
+            sendData("l0,\n");
             height = 0;
         }
-        sendCoor("z," + 0 + "," + (height * 1) + "\n");
+        sendData("z," + 0 + "," + (height * 1) + "\n");
         if (!receiveMessage().equals("1")) {
             return false;
         }
-        // Centering 3D printer
-        sendCoor("c,\n");
+//         Centering 3D printer
+        sendData("c,\n");
         if (!receiveMessage().equals("1")) {
             return false;
         }
         return true;
     }
 
-    private void restartActivity() {
-        Intent intent = getIntent();
-        finish();
-        startActivity(intent);
-    }
-
+    /**
+     * Send the next coordinate in the queue to the dual axis and
+     * start the BarcodeScanner activity to get the result.
+     *
+     * @see BarcodeScanner
+     */
     private void readBarcodes() {
-
         Log.d("Send Coordinate", "Sent " + currentCoor.toString());
-        sendCoor("s," + currentCoor.x + "," + currentCoor.y + "\n");
+        sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
 
-
-        // Format: X,Y  |   SEND TO ARDUINO
-
-        // WAIT UNTIL IT MOVES
-        while (true) {
-            Log.d("debuga", "Waiting for 3D Positioning");
-//                String temp = receiveCoor();
-            String temp = "hai";
-            if (temp.length() > 1) {
-                Log.d("debuga", "Sending Next Coordinate");
-                break;
-            }
+        // Wait until the dual axis finish positioning
+        while (!receiveMessage().equals("2")) {
         }
 
         // GO TO SCANDIT ACTIVITY
         Intent intent = new Intent(this, BarcodeScanner.class);
         intent.putExtra("type", currentCoor.type.toString());
-        startActivityForResult(intent, GET_BARCODE);
 
+        startActivityForResult(intent, GET_BARCODE);
     }
 
+    /**
+     * Process the result(barcode) from BarcodeScanner activity
+     * and store the barcode in the correct Bin.
+     *
+     * @see Bin
+     * @see Activity
+     */
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent data) {
         if (requestCode == GET_BARCODE) {
@@ -366,6 +581,10 @@ public class MainActivity extends Activity {
                 Log.d("Coordinate, barcodes", currentCoor.toString() + ", " + barcodes);
 
 //                result.put(currentCoor, barcodeList);
+                // Finish shaking
+//                while (!receiveMessage().equals("3")) {
+//                }
+//                queueing();
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -374,7 +593,6 @@ public class MainActivity extends Activity {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-//                captureButton.performClick();
                     }
                 }, 2000);
 
@@ -384,165 +602,16 @@ public class MainActivity extends Activity {
         }
     }
 
-    private List<Bin> processData(File file) {
-//        List<Coordinate> coordinates = new ArrayList<Coordinate>();
-        List<Bin> queue = new ArrayList<>();
-
-        // Code
-        Bitmap bitmap = BitmapFactory.decodeFile(file.toString());
-
-        Mat ImageMat = new Mat();
-        Bitmap resultBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-        Utils.bitmapToMat(resultBitmap, ImageMat);
-
-        mPreview.stopPreviewAndFreeCamera();
-        setContentView(R.layout.templatematching);
-
-        mImageView = (ImageView) findViewById(R.id.imageView);
-        mImageView.setImageResource(android.R.color.transparent);
-
-        boolean done = false;
-        while (!done) {
-            if (mImageView.isShown()) {
-                done = true;
-                // Boundaries Detection
-                BoundaryDetector boundaryDetector = new BoundaryDetector(ImageMat);
-                List<Dimension> foundMarkers = boundaryDetector.getMarkers();
-                List<Dimension> boundaries = boundaryDetector.getBoundaries();
-                List<Dimension> bottomMarkers = boundaryDetector.getBottomMarkers();
-                Dimension bottomBoundary = boundaryDetector.getBottomBoundary();
-                Dimension rightBoundary = boundaryDetector.getRightBoundary();
-                Dimension leftBoundary = boundaryDetector.getLeftBoundary();
-                Dimension topBoundary = boundaryDetector.getTopBoundary();
-                if (bottomBoundary.getCenter() != -1 && topBoundary.getCenter() != -1) {
-                    height = Math.abs(bottomBoundary.getCenter() - topBoundary.getCenter());
-                } else {
-                    height = -1;
-                }
-                Log.d("Time stamp", "Finish detecting boundaries");
-
-                // Bin Labels Detection
-                BinLabelDetector binLabelDetector = new BinLabelDetector(ImageMat);
-                List<Dimension> binLabels = binLabelDetector.getEliminatedLabels(bottomBoundary, rightBoundary, leftBoundary);
-                List<Dimension> binLabelCentroids = binLabelDetector.getEliminatedCentroids(binLabels);
-                Log.d("Time stamp", "Finish detecting labels");
-
-                // Boxes Detection
-//                BoxDetector boxDetector = new BoxDetector(ImageMat);
-                Haar boxDetector = new Haar(ImageMat);
-                List<Dimension> labels = boxDetector.getEliminatedBoxes(boundaries);
-                List<Dimension> boxCentroids = boxDetector.getEliminatedCentroids(labels);
-                Log.d("Time stamp", "Finish detecting boxes");
-
-                // Create Queue
-                queue = createQueue(bottomMarkers, binLabelCentroids, boxCentroids);
-                Log.d("Time stamp", "Finish creating queue");
-
-                // Initial Setting
-                Canvas cnvs = new Canvas(resultBitmap);
-                cnvs.drawBitmap(resultBitmap, 0, 0, null);
-                Paint paintStroke = new Paint();
-                Paint paintFill = new Paint();
-                paintStroke.setStyle(Paint.Style.STROKE);
-                paintStroke.setStrokeWidth(20f);
-
-                // Drawing markers
-                for (Dimension d : foundMarkers) {
-                    Log.d("Dimension", d.toString());
-                    paintFill.setColor(d.getColor());
-                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
-                }
-
-                // Drawing Lines
-                for (Dimension d : boundaries) {
-                    Log.d("Dimension", d.toString());
-                    paintStroke.setColor(d.getColor());
-                    if (d.getOrientation() == Orientation.HORIZONTAL) {
-                        cnvs.drawLine((float) d.getStart(), (float) d.getCenter(), (float) d.getEnd(), (float) d.getCenter(), paintStroke);
-                    } else if (d.getOrientation() == Orientation.VERTICAL) {
-                        cnvs.drawLine((float) d.getCenter(), (float) d.getStart(), (float) d.getCenter(), (float) d.getEnd(), paintStroke);
-                    }
-                }
-
-                // Drawing Bin Labels
-                for (Dimension d : binLabels) {
-                    paintStroke.setColor(d.getColor());
-                    cnvs.drawRect((float) d.getLeft(), (float) d.getTop(), (float) d.getRight(), (float) d.getBottom(), paintStroke);
-                }
-                // Drawing Boxes' Labels
-                for (Dimension d : labels) {
-                    paintStroke.setColor(d.getColor());
-                    cnvs.drawRect((float) d.getLeft(), (float) d.getTop(), (float) d.getRight(), (float) d.getBottom(), paintStroke);
-                }
-                // Drawing centroids
-                String data = "";
-                for (Dimension d : boxCentroids) {
-                    paintFill.setColor(d.getColor());
-                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
-                    data = data + d.getX() + "," + d.getY() + ";";
-//                    coordinates.add(new Coordinate(Type.BOX, d.getX(), d.getY()));
-                }
-
-                for (Dimension d : binLabelCentroids) {
-                    paintFill.setColor(d.getColor());
-                    cnvs.drawCircle((float) d.getX(), (float) d.getY(), (float) d.getR(), paintFill);
-                    data = data + d.getX() + "," + d.getY() + ";";
-//                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
-                }
-
-                Log.d("Time stamp", "Finish drawing");
-                Log.d("Data", data);
-                mImageView.setImageBitmap(resultBitmap);
-                Log.d("Time stamp", "Finish setting image view");
-//                storeImage(resultBitmap);boxd
-            }
-        }
-        return queue;
-    }
-
-    private List<Bin> createQueue(List<Dimension> bottomMarkers, List<Dimension> binLabelCentroids,
-                                  List<Dimension> boxCentroids) {
-        List<Bin> queue = new ArrayList<>();
-
-        for (int i = 0; i < bottomMarkers.size() - 1; i++) {
-            List<Coordinate> temp = new ArrayList<>();
-            if (!binLabelCentroids.isEmpty()) {
-                Dimension binLabel = binLabelCentroids.get(0);
-                Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
-                Log.d("Queue Binlabel", binLabel.toString());
-                if (binLabel.getX() > bottomMarkers.get(i).getX() && binLabel.getX() < bottomMarkers.get(i + 1).getX()) {
-                    binLabelCentroids.remove(0);
-                    while (!boxCentroids.isEmpty()) {
-                        Dimension box = boxCentroids.get(0);
-                        if (box.getX() > bottomMarkers.get(i).getX() && box.getX() < bottomMarkers.get(i + 1).getX()) {
-                            temp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
-                            Log.d("Add box", box.toString());
-                            boxCentroids.remove(0);
-                        } else if(box.getX() < bottomMarkers.get(i).getX()) {
-                            boxCentroids.remove(0);
-                        } else{
-                            break;
-                        }
-                    }
-                    queue.add(new Bin(new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY()), temp));
-                }
-            } else {
-                break;
-            }
-        }
-
-        Log.d("Queue", "Size: " + queue.size());
-        for (Bin bin : queue) {
-            Log.d("QUEUE", bin.toString());
-        }
-        return queue;
-    }
-
-    public void takePicture(final Camera.PictureCallback callback) throws Exception {
+    /**
+     * Take picture.
+     *
+     * @param callback Picture Callback
+     * @throws IllegalStateException On camera unavailable.
+     * @see Camera
+     */
+    public void takePicture(final Camera.PictureCallback callback) {
         if (mCamera == null)
             throw new IllegalStateException("Camera unavailable!");
-
-        // TODO lock camera here?
 
         // Use auto focus if the camera supports it
         String focusMode = mCamera.getParameters().getFocusMode();
@@ -552,7 +621,7 @@ public class MainActivity extends Activity {
                 safeToTakePicture = false;
             }
         } else
-            Log.d("FOCUS", "NOT IN AUTOFOCUS");
+            Log.e("FOCUS", "NOT IN AUTOFOCUS");
         mCamera.takePicture(null, null, callback);
     }
 
@@ -588,32 +657,43 @@ public class MainActivity extends Activity {
         }
     }
 
-    //Bluetooth Functions
+    /**
+     * Disconnect bluetooth from the device.
+     */
     private void Disconnect() {
         if (btSocket != null) //If the btSocket is busy
         {
             try {
                 btSocket.close(); //close connection
             } catch (IOException e) {
-                msg("Error");
+                toast("Error");
             }
         }
         finish(); //return to the first layout
 
     }
 
-    private void sendCoor(String data) {
+    /**
+     * Send data via bluetooth
+     *
+     * @throws IOException On socket failed
+     */
+    private void sendData(String data) {
         if (btSocket != null) {
             try {
                 btSocket.getOutputStream().write(data.toString().getBytes());
-                Log.d("sendCoor", data);
+                Log.d("sendData", data);
             } catch (IOException e) {
-                msg("Error");
+                toast("Error");
             }
         }
     }
 
-
+    /**
+     * Receive message from bluetooth
+     *
+     * @throws IOException On socket failed.
+     */
     private String receiveMessage() {
         byte[] buffer = new byte[1024];
         int bytes;
@@ -626,15 +706,19 @@ public class MainActivity extends Activity {
                 readMessage = new String(buffer, 0, bytes);
                 Log.d("Bluetooth", readMessage);
             } catch (IOException e) {
-                msg("Error");
+                toast("Error");
             }
         }
         return readMessage;
     }
 
-    // fast way to call Toast
-    private void msg(String s) {
-        Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG).show();
+    /**
+     * Method to make a toast
+     *
+     * @param msg Message.
+     */
+    private void toast(String msg) {
+        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
     }
 
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
@@ -669,40 +753,23 @@ public class MainActivity extends Activity {
             super.onPostExecute(result);
 
             if (!ConnectSuccess) {
-                msg("Connection Failed. Is it a SPP Bluetooth? Try again.");
+                toast("Connection Failed. Is it a SPP Bluetooth? Try again.");
                 finish();
             } else {
-                msg("Connected.");
+                toast("Connected.");
                 isBtConnected = true;
             }
             progress.dismiss();
         }
+
     }
 
-    private void saveBitmap(Bitmap bitmap) {
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "result");
-        FileOutputStream out = null;
-        try {
-            out = new FileOutputStream(new File(mediaStorageDir.getPath() + File.separator + lastPictureTaken.getName()));
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out); // bmp is your Bitmap instance
-            // PNG is a lossless format, the compression factor (100) is ignored
-            out.flush();
-            out.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static void storeImage(Bitmap image) {
+    /**
+     * Save bitmap in /Picture/shelves
+     *
+     * @param bitmap Bitmap.
+     */
+    public static void storeImage(Bitmap bitmap) {
         File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
         if (pictureFile == null) {
             Log.d(TAG,
@@ -711,7 +778,7 @@ public class MainActivity extends Activity {
         }
         try {
             FileOutputStream fos = new FileOutputStream(pictureFile);
-            image.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
             fos.close();
         } catch (FileNotFoundException e) {
             Log.d(TAG, "File not found: " + e.getMessage());
@@ -720,4 +787,70 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String toJson() {
+//        "{\n" +
+//                "\t\"aisle\": {\n" +
+//                "\t\t\"name\": \"AA\",\n" +
+//                "\t\t\"partition\": 0,\n" +
+//                "\t\t\"bins\": [{\n" +
+//                "\t\t\t\"name\": \"DG78-02-04\",\n" +
+//                "\t\t\t\"occupancy_level\": \"26%\",\n" +
+//                "\t\t\t\"items\": [{\n" +
+//                "\t\t\t\t\t\"1T\": \"1T1E603266A08\",\n" +
+//                "\t\t\t\t\t\"1P\": \"1PSP000237784\",\n" +
+//                "\t\t\t\t\t\"9D\": \"9D1621\",\n" +
+//                "\t\t\t\t\t\"Q\": \"Q2500\",\n" +
+//                "\t\t\t\t\t\"X\": \"X98819768\",\n" +
+//                "\t\t\t\t\t\"13D\": \"13D16211621\"\n" +
+//                "\t\t\t\t},\n" +
+//                "\t\t\t\t{\n" +
+//                "\t\t\t\t\t\"1T\": \"1T1E603266A08\",\n" +
+//                "\t\t\t\t\t\"1P\": \"1PSP000237784\",\n" +
+//                "\t\t\t\t\t\"9D\": \"9D1621\",\n" +
+//                "\t\t\t\t\t\"Q\": \"Q2500\",\n" +
+//                "\t\t\t\t\t\"X\": \"X98819768\",\n" +
+//                "\t\t\t\t\t\"13D\": \"13D16211621\"\n" +
+//                "\t\t\t\t}\n" +
+//                "\t\t\t]\n" +
+//                "\t\t}]\n" +
+//                "\t}\n" +
+//                "}"
+        String output = String.format("{\n" +
+                "\t\"aisle\": {\n" +
+                "\t\t\"name\": \"%s\",\n" +
+                "\t\t\"partition\": %s,\n" +
+                "\t\t\"bins\": [", aisle, partition);
+        boolean firstBin = true;
+        for (Bin bin : result) {
+            if (!firstBin) {
+                output = output + ",";
+            } else {
+                firstBin = false;
+            }
+            output = output + String.format(
+                    "{\t\t\t\"name\": \"%s\",\n" +
+                            "\t\t\t\"occupancy_level\": \"26%\",\n" +
+                            "\t\t\t\"items\": [\n", bin.getBinLabelBarcode());
+
+            boolean firstBox = true;
+            for (Map.Entry<Coordinate, Barcodes> entry : bin.getBoxesBarcodes().entrySet()) {
+                if (!firstBox) {
+                    output = output + ", ";
+                } else {
+                    firstBox = false;
+                }
+                Barcodes box = entry.getValue();
+                output = output + String.format(
+                        "{\t\t\t\t\t\"1T\": \"%s\",\n" +
+                                "\t\t\t\t\t\"1P\": \"%s\",\n" +
+                                "\t\t\t\t\t\"9D\": \"%s\",\n" +
+                                "\t\t\t\t\t\"Q\": \"%s\",\n" +
+                                "\t\t\t\t\t\"X\": \"%s\",\n" +
+//                                "\t\t\t\t\t\"13D\": \"%s\"\n" +
+                                "}", box.getT(), box.getP(), box.getD9(), box.getQ(), box.getX());
+            }
+            output = output + "]}}";
+        }
+        return output;
+    }
 }
