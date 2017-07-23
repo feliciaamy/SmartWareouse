@@ -14,6 +14,10 @@ import android.util.Log;
 import android.view.Window;
 import android.widget.FrameLayout;
 
+import org.opencv.calib3d.Calib3d;
+import org.opencv.core.Core;
+import org.opencv.features2d.Feature2D;
+import org.opencv.imgproc.Imgproc;
 import org.smartwarehouse.R;
 import org.smartwarehouse.object.*;
 import org.smartwarehouse.scanner.BarcodeScanner;
@@ -76,10 +80,13 @@ import static android.content.ContentValues.TAG;
 public class MainActivity extends Activity {
     private String aisle = "AA";
     private int partition = 0;
+
     // Variable
     private final int IMAGE_HEIGHT = 2916;
     private final int IMAGE_WIDTH = 5184;
     private double height = 0;//2103;
+    private double avgLengthBox = 0;
+    private double avgHeightBox = 0;
 
     // Reading Barcodes
     final int GET_BARCODE = 1;
@@ -312,6 +319,8 @@ public class MainActivity extends Activity {
         Bitmap resultBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
         Utils.bitmapToMat(resultBitmap, ImageMat);
 
+//        ImageMat = getUndistortedImage(ImageMat);
+
         mPreview.stopPreviewAndFreeCamera();
         setContentView(R.layout.templatematching);
 
@@ -346,8 +355,12 @@ public class MainActivity extends Activity {
 
                 // Boxes Detection
                 BoxDetector boxDetector = new BoxDetector(ImageMat, Algorithm.HAAR);
+//                List<Label> labels = boxDetector.getBoxes();
                 List<Label> labels = boxDetector.getEliminatedBoxes(topBoundary, bottomBoundary, rightBoundary, leftBoundary);
                 List<Centroid> boxCentroids = boxDetector.getEliminatedCentroids(labels);
+                avgHeightBox = boxDetector.getAvgEliminatedHeight();
+                avgLengthBox = boxDetector.getAvgEliminatedLength();
+                Log.d("Centroid", boxCentroids.size() + "");
                 Log.d("Time stamp", "Finish detecting boxes");
 
                 // Create Queue
@@ -406,6 +419,10 @@ public class MainActivity extends Activity {
 //                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
                 }
 
+                cnvs.drawCircle((float) 5312/2, (float) 2988/2, (float) 100, paintFill);
+//                Log.d("TEST1", Integer.toString(resultBitmap.getHeight()) );
+//                Log.d("TEST1", Integer.toString(resultBitmap.getWidth()) );
+
                 Log.d("Time stamp", "Finish drawing");
                 Log.d("Data", data);
                 mImageView.setImageBitmap(resultBitmap);
@@ -416,6 +433,25 @@ public class MainActivity extends Activity {
         return queue;
     }
 
+    private Mat getUndistortedImage(Mat ImageMat){
+
+        Mat mCameraMatrix = new Mat();
+        Mat mDistortionCoefficients = new Mat();
+        Mat undistorted = new Mat();
+        Mat newCameraMatrix = new Mat();
+
+        int CAMERA_MATRIX_ROWS = 3;
+        int CAMERA_MATRIX_COLS = 3;
+        int DISTORTION_COEFFICIENTS_SIZE = 5;
+        double[] cameraMatrixArray =  new double[] { 4.04113950e+04,0.00000000e+00,2.65743957e+03, 0.00000000e+00, 4.22524546e+04, 1.49933395e+03, 0.00000000e+00, 0.00000000e+00,1.00000000e+00};
+        mCameraMatrix.put(0,0,cameraMatrixArray);
+        double[] distortionMatrixArray =  new double[] {2.96857686e+01, 1.47129153e-01, 1.66132097e-01, 6.81668569e-02, 1.02986663e-04};
+        mDistortionCoefficients.put(0,0,distortionMatrixArray);
+        newCameraMatrix = Calib3d.getOptimalNewCameraMatrix(mCameraMatrix, mDistortionCoefficients,ImageMat.size() ,1);
+        Imgproc.undistort(ImageMat,undistorted, mCameraMatrix,mDistortionCoefficients, newCameraMatrix);
+
+        return undistorted;
+    }
     /**
      * Given the markers, bin labels, and boxes, this method will
      * create a queue of bins where a bin is defined when there are
@@ -532,7 +568,11 @@ public class MainActivity extends Activity {
      */
     private void readBarcodes() {
         Log.d("Send Coordinate", "Sent " + currentCoor.toString());
-        sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+        if (currentCoor.type == Type.BOX) {
+            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+        } else {
+            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+        }
 
         // Wait until the dual axis finish positioning
         while (!receiveMessage().equals("2")) {
@@ -582,19 +622,19 @@ public class MainActivity extends Activity {
 
 //                result.put(currentCoor, barcodeList);
                 // Finish shaking
-//                while (!receiveMessage().equals("3")) {
-//                }
-//                queueing();
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            queueing();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, 2000);
+                while (!receiveMessage().equals("3")) {
+                }
+                queueing();
+//                new Handler().postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        try {
+//                            queueing();
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }, 2000);
 
             } else {
                 Log.e("SCANDIT INTENT", "NO RETURN");

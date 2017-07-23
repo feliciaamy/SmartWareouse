@@ -37,6 +37,8 @@ public class BoxDetector {
     private static List<Label> boxes = new ArrayList<Label>();
     private static List<Centroid> centroids = new ArrayList<Centroid>();
     private static double avgArea = 0;
+    private static double avgLength = 0;
+    private static double avgHeight = 0;
 
     public BoxDetector(Mat img, Algorithm algo) {
         this.ImageMat = img;
@@ -86,7 +88,7 @@ public class BoxDetector {
             Label newLabel = new Label(box.x, box.y, box.x + box.width, box.y + box.height, Color.GREEN);
             if (boxes.contains(newLabel)) {
                 Log.d("SAME", newLabel.toString());
-            } else {
+            } else if (newLabel.getArea() > 300000 && newLabel.getArea() < 450000) {
                 totArea += newLabel.getArea();
                 Log.d("Area", newLabel.getArea() + "");
                 boxes.add(newLabel);
@@ -166,14 +168,18 @@ public class BoxDetector {
         double eps = 5;
         double areaEps = avgArea * 0.6;
         boolean tolerate = false;
+        double totLength = 0;
+        double totHeight = 0;
         for (Label box : boxes) {
             if (!(box.getArea() < areaEps + avgArea && box.getArea() > avgArea - areaEps)) {
                 continue;
             }
             if (topBoundary.getCenter() < box.getTop() && bottomBoundary.getCenter() > box.getBottom()
-                    && leftBoundary.getCenter() < box.getLeft() && rightBoundary.getCenter() > box.getRight())
+                    && leftBoundary.getCenter() < box.getLeft() && rightBoundary.getCenter() > box.getRight()) {
                 eliminatedBoxes.add(box);
-
+                totHeight += Math.abs(box.getTop() - box.getBottom());
+                totLength += Math.abs(box.getTop() - box.getBottom());
+            }
         }
 
         Collections.sort(eliminatedBoxes, new Comparator<Label>() {
@@ -184,7 +190,17 @@ public class BoxDetector {
         for (Label d : eliminatedBoxes) {
             Log.d("Sorted Box", d.toString());
         }
+        avgLength = totLength / eliminatedBoxes.size();
+        avgHeight = totHeight / eliminatedBoxes.size();
         return eliminatedBoxes;
+    }
+
+    public double getAvgEliminatedLength() {
+        return avgLength;
+    }
+
+    public double getAvgEliminatedHeight() {
+        return avgHeight;
     }
 
     public static List<Centroid> getEliminatedCentroids(List<Label> boxes) {

@@ -158,30 +158,28 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         ScanSettings settings = ScanSettings.create();
         // if they match an already decoded barcode in the session
 //        settings.setRelativeZoom(0.9f);
-        settings.setCodeDuplicateFilter(-1);
+        settings.setCodeDuplicateFilter(0);
 
+//        settings.setMicroDataMatrixEnabled();
         // the maximum number of codes to be decoded every frame
-        settings.setMaxNumberOfCodesPerFrame(6);
+        settings.setMaxNumberOfCodesPerFrame(1);
+        settings.setRelativeZoom(0.9f);
         if (type == Type.BINLABEL) {
             settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE128, true);
-            settings.setRelativeZoom(0.9f);
             Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());
 
         } else {
             settings.setSymbologyEnabled(Barcode.SYMBOLOGY_DATA_MATRIX, true);
-
-            settings.setRelativeZoom(0.9f);
+            settings.setForce2dRecognitionEnabled(true);
             Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());
-
 //            settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE128, true);
         }
-
 
         // Enable MatrixScan and set the max number of barcodes that can be recognized per frame
         // to some reasonable number for your use case. The max number of codes per frame does not
         // limit the number of codes that can be tracked at the same time, it only limits the
         // number of codes that can be newly recognized per frame.
-        settings.setMatrixScanEnabled(true);
+        settings.setMatrixScanEnabled(false);
         settings.setHighDensityModeEnabled(true);
 
         settings.setRestrictedAreaScanningEnabled(true);

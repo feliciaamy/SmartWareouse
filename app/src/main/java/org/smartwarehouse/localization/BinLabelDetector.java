@@ -117,6 +117,9 @@ public class BinLabelDetector {
         Imgproc.morphologyEx(filteredMat, filteredMat, Imgproc.MORPH_CLOSE, kernel);
         Imgproc.erode(filteredMat, filteredMat, kernel);
         Imgproc.dilate(filteredMat, filteredMat, kernel);
+        Imgproc.dilate(filteredMat, filteredMat, kernel);
+        Imgproc.dilate(filteredMat, filteredMat, kernel);
+        Imgproc.dilate(filteredMat, filteredMat, kernel);
     }
 
     public static List<Centroid> getEliminatedCentroids(List<Label> binLabels) {
@@ -132,7 +135,7 @@ public class BinLabelDetector {
 
     private static boolean isInLine(Label label, Boundary boundary) {
         double height = Math.abs(label.getTop() - label.getBottom());
-        if (Math.abs((label.getTop() + label.getBottom()) / 2 - boundary.getCenter()) < height * 2) {
+        if (Math.abs((label.getTop() + label.getBottom()) / 2 - boundary.getCenter()) < height) {
             return true;
         }
 

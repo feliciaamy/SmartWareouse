@@ -65,12 +65,16 @@ public class BoundaryDetector {
 
         final List<Point> detected = new ArrayList<Point>();
         for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-            if (Imgproc.contourArea(contours.get(contourIdx)) > 100) {
+            if (Imgproc.contourArea(contours.get(contourIdx)) > 500) {
                 Moments moments = Imgproc.moments(contours.get(contourIdx));
                 final Point centroid = new Point();
                 centroid.x = moments.get_m10() / moments.get_m00();
                 centroid.y = moments.get_m01() / moments.get_m00();
-                detected.add(centroid);
+                if (!detected.contains(centroid)){
+                    detected.add(centroid);
+                }
+            } else {
+                Log.d("Marker", Imgproc.contourArea(contours.get(contourIdx)) + "");
             }
         }
 
