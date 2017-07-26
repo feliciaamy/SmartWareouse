@@ -35,27 +35,30 @@ public class BoxDetector {
 
     // Found
     private static List<Label> boxes = new ArrayList<Label>();
+    //    private static List<Label> boxesTemp = new ArrayList<>();
     private static List<Centroid> centroids = new ArrayList<Centroid>();
     private static double avgArea = 0;
     private static double avgLength = 0;
     private static double avgHeight = 0;
 
-    public BoxDetector(Mat img, Algorithm algo) {
+    public BoxDetector(Mat img, boolean applyThreshold) {
         this.ImageMat = img;
         clear();
-        if (algo == Algorithm.HAAR) {
-            findBoxesHaar();
+        List<Label> boxHaar = findBoxesHaar();
+        if (applyThreshold) {
+            Log.d("Threshold", "Filter with threshold");
+            boxes = findBoxesThreshold(boxHaar);
         } else {
-            findBoxesThreshold();
+            boxes = boxHaar;
         }
     }
 
-    private void findBoxesHaar() {
-
+    private List<Label> findBoxesHaar() {
+        List<Label> boxesTemp = new ArrayList<>();
         File sdcard = Environment.getExternalStorageDirectory();
 
         //Get the text file
-        File cascadeDirER = new File(sdcard, "cascade.xml");
+        File cascadeDirER = new File(sdcard, "cascade_trials1.xml");
 //        readFile(cascadeDirER);
         //        File file = new File("cascade.xml");
         if (cascadeDirER.exists()) {
@@ -86,22 +89,24 @@ public class BoxDetector {
         double totArea = 0;
         for (Rect box : boxesArray) {
             Label newLabel = new Label(box.x, box.y, box.x + box.width, box.y + box.height, Color.GREEN);
-            if (boxes.contains(newLabel)) {
+            if (boxesTemp.contains(newLabel)) {
                 Log.d("SAME", newLabel.toString());
             } else if (newLabel.getArea() > 300000 && newLabel.getArea() < 450000) {
                 totArea += newLabel.getArea();
                 Log.d("Area", newLabel.getArea() + "");
-                boxes.add(newLabel);
+                boxesTemp.add(newLabel);
                 centroids.add(new Centroid(box.x + box.width / 2, box.y + box.height / 2, 20, Color.BLACK));
             }
         }
-        avgArea = totArea / boxes.size();
+        avgArea = totArea / boxesTemp.size();
         Log.d("Average Area", avgArea + "");
-        Log.d("Haar", "Boxes #: " + boxes.size());
+        Log.d("Haar", "Boxes #: " + boxesTemp.size());
         Log.d("Haar", "Centroids #: " + centroids.size());
+        return boxesTemp;
     }
 
-    private static void findBoxesThreshold() {
+    private static List<Label> findBoxesThreshold(List<Label> boxesTemp) {
+        List<Label> filtered = new ArrayList<Label>();
         filtering();
         List<MatOfPoint> coordinates = new ArrayList<MatOfPoint>();
         Imgproc.findContours(filteredMat, coordinates, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -109,32 +114,60 @@ public class BoxDetector {
         final List<Float> ratio = new ArrayList<>();
         double totArea = 0;
         for (int i = 0; i < coordinates.size(); i++) {
-            if (Imgproc.contourArea(coordinates.get(i)) > 30000 && Imgproc.contourArea(coordinates.get(i)) < 300000) {
-//            if (Imgproc.contourArea(coordinates.get(i)) > 20000 && Imgproc.contourArea(coordinates.get(i)) < 700000) {
-                Rect box = Imgproc.boundingRect(coordinates.get(i));
-
+            Rect box = Imgproc.boundingRect(coordinates.get(i));
+            if (Imgproc.contourArea(coordinates.get(i)) > 100000) {
                 float ratiod = ((float) box.height / (float) box.width);
                 if (0.4 < ratiod && ratiod < 0.55) {
                     // Drawing of rectangle
                     Label newLabel = new Label(box.x, box.y, box.x + box.width, box.y + box.height, Color.GREEN);
-                    if (boxes.contains(newLabel)) {
-                        Log.d("SAME", newLabel.toString());
-                    } else {
-                        totArea += newLabel.getArea();
-                        Log.d("Area", newLabel.getArea() + "");
-                        boxes.add(newLabel);
-                        centroids.add(new Centroid(box.x + box.width / 2, box.y + box.height / 2, 20, Color.BLACK));
+                    for (Label b : boxesTemp) {
+                        if (newLabel.isInside(b)) {
+                            filtered.add(newLabel);
+                            Log.d("x, y", box.x + ", " + box.y);
+                            Log.d("width, height", box.width + ", " + box.height);
+                        } else {
+                            Log.d("threshold", box.width + ", " + box.height);
+                        }
                     }
-                    Log.d("(Drawn) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
-                } else {
-                    Log.d("(Wrong) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
                 }
-            } else {
-                Log.d("Area: ", "" + Imgproc.contourArea(coordinates.get(i)));
             }
         }
-        avgArea = totArea / boxes.size();
+        return filtered;
     }
+//    private static void findBoxesThreshold() {
+//        filtering();
+//        List<MatOfPoint> coordinates = new ArrayList<MatOfPoint>();
+//        Imgproc.findContours(filteredMat, coordinates, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+//
+//        final List<Float> ratio = new ArrayList<>();
+//        double totArea = 0;
+//        for (int i = 0; i < coordinates.size(); i++) {
+//            if (Imgproc.contourArea(coordinates.get(i)) > 30000 && Imgproc.contourArea(coordinates.get(i)) < 300000) {
+////            if (Imgproc.contourArea(coordinates.get(i)) > 20000 && Imgproc.contourArea(coordinates.get(i)) < 700000) {
+//                Rect box = Imgproc.boundingRect(coordinates.get(i));
+//
+//                float ratiod = ((float) box.height / (float) box.width);
+//                if (0.4 < ratiod && ratiod < 0.55) {
+//                    // Drawing of rectangle
+//                    Label newLabel = new Label(box.x, box.y, box.x + box.width, box.y + box.height, Color.GREEN);
+//                    if (boxes.contains(newLabel)) {
+//                        Log.d("SAME", newLabel.toString());
+//                    } else {
+//                        totArea += newLabel.getArea();
+//                        Log.d("Area", newLabel.getArea() + "");
+//                        boxes.add(newLabel);
+//                        centroids.add(new Centroid(box.x + box.width / 2, box.y + box.height / 2, 20, Color.BLACK));
+//                    }
+//                    Log.d("(Drawn) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
+//                } else {
+//                    Log.d("(Wrong) Ratio: ", ratiod + ", Area: " + Imgproc.contourArea(coordinates.get(i)));
+//                }
+//            } else {
+//                Log.d("Area: ", "" + Imgproc.contourArea(coordinates.get(i)));
+//            }
+//        }
+//        avgArea = totArea / boxes.size();
+//    }
 
     private static void filtering() {
         Core.bitwise_not(ImageMat, filteredMat);
@@ -165,7 +198,7 @@ public class BoxDetector {
     // Return a sorted eliminated Boxes
     public static List<Label> getEliminatedBoxes(Boundary topBoundary, Boundary bottomBoundary, Boundary rightBoundary, Boundary leftBoundary) {
         List<Label> eliminatedBoxes = new ArrayList<Label>();
-        double eps = 5;
+        double eps = 100;
         double areaEps = avgArea * 0.6;
         boolean tolerate = false;
         double totLength = 0;
@@ -174,8 +207,8 @@ public class BoxDetector {
             if (!(box.getArea() < areaEps + avgArea && box.getArea() > avgArea - areaEps)) {
                 continue;
             }
-            if (topBoundary.getCenter() < box.getTop() && bottomBoundary.getCenter() > box.getBottom()
-                    && leftBoundary.getCenter() < box.getLeft() && rightBoundary.getCenter() > box.getRight()) {
+            if (topBoundary.getCenter() - eps < box.getTop() && bottomBoundary.getCenter() + eps > box.getBottom()
+                    && leftBoundary.getCenter() - eps < box.getLeft() && rightBoundary.getCenter() + eps > box.getRight()) {
                 eliminatedBoxes.add(box);
                 totHeight += Math.abs(box.getTop() - box.getBottom());
                 totLength += Math.abs(box.getTop() - box.getBottom());

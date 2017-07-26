@@ -163,7 +163,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
 //        settings.setMicroDataMatrixEnabled();
         // the maximum number of codes to be decoded every frame
         settings.setMaxNumberOfCodesPerFrame(1);
-        settings.setRelativeZoom(0.9f);
+        settings.setRelativeZoom(1f);
         if (type == Type.BINLABEL) {
             settings.setSymbologyEnabled(Barcode.SYMBOLOGY_CODE128, true);
             Log.d("SCANDIT ZOOM", "" + settings.getRelativeZoom());

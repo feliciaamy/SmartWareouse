@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -354,7 +356,7 @@ public class MainActivity extends Activity {
                 Log.d("Time stamp", "Finish detecting labels");
 
                 // Boxes Detection
-                BoxDetector boxDetector = new BoxDetector(ImageMat, Algorithm.HAAR);
+                BoxDetector boxDetector = new BoxDetector(ImageMat, false);
 //                List<Label> labels = boxDetector.getBoxes();
                 List<Label> labels = boxDetector.getEliminatedBoxes(topBoundary, bottomBoundary, rightBoundary, leftBoundary);
                 List<Centroid> boxCentroids = boxDetector.getEliminatedCentroids(labels);
@@ -419,7 +421,7 @@ public class MainActivity extends Activity {
 //                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
                 }
 
-                cnvs.drawCircle((float) 5312/2, (float) 2988/2, (float) 100, paintFill);
+                cnvs.drawCircle((float) 5312 / 2, (float) 2988 / 2, (float) 100, paintFill);
 //                Log.d("TEST1", Integer.toString(resultBitmap.getHeight()) );
 //                Log.d("TEST1", Integer.toString(resultBitmap.getWidth()) );
 
@@ -433,7 +435,7 @@ public class MainActivity extends Activity {
         return queue;
     }
 
-    private Mat getUndistortedImage(Mat ImageMat){
+    private Mat getUndistortedImage(Mat ImageMat) {
 
         Mat mCameraMatrix = new Mat();
         Mat mDistortionCoefficients = new Mat();
@@ -443,15 +445,16 @@ public class MainActivity extends Activity {
         int CAMERA_MATRIX_ROWS = 3;
         int CAMERA_MATRIX_COLS = 3;
         int DISTORTION_COEFFICIENTS_SIZE = 5;
-        double[] cameraMatrixArray =  new double[] { 4.04113950e+04,0.00000000e+00,2.65743957e+03, 0.00000000e+00, 4.22524546e+04, 1.49933395e+03, 0.00000000e+00, 0.00000000e+00,1.00000000e+00};
-        mCameraMatrix.put(0,0,cameraMatrixArray);
-        double[] distortionMatrixArray =  new double[] {2.96857686e+01, 1.47129153e-01, 1.66132097e-01, 6.81668569e-02, 1.02986663e-04};
-        mDistortionCoefficients.put(0,0,distortionMatrixArray);
-        newCameraMatrix = Calib3d.getOptimalNewCameraMatrix(mCameraMatrix, mDistortionCoefficients,ImageMat.size() ,1);
-        Imgproc.undistort(ImageMat,undistorted, mCameraMatrix,mDistortionCoefficients, newCameraMatrix);
+        double[] cameraMatrixArray = new double[]{4.04113950e+04, 0.00000000e+00, 2.65743957e+03, 0.00000000e+00, 4.22524546e+04, 1.49933395e+03, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00};
+        mCameraMatrix.put(0, 0, cameraMatrixArray);
+        double[] distortionMatrixArray = new double[]{2.96857686e+01, 1.47129153e-01, 1.66132097e-01, 6.81668569e-02, 1.02986663e-04};
+        mDistortionCoefficients.put(0, 0, distortionMatrixArray);
+        newCameraMatrix = Calib3d.getOptimalNewCameraMatrix(mCameraMatrix, mDistortionCoefficients, ImageMat.size(), 1);
+        Imgproc.undistort(ImageMat, undistorted, mCameraMatrix, mDistortionCoefficients, newCameraMatrix);
 
         return undistorted;
     }
+
     /**
      * Given the markers, bin labels, and boxes, this method will
      * create a queue of bins where a bin is defined when there are
@@ -468,7 +471,7 @@ public class MainActivity extends Activity {
         List<Bin> queue = new ArrayList<>();
 
         for (int i = 0; i < bottomMarkers.size() - 1; i++) {
-            List<Coordinate> temp = new ArrayList<>();
+            List<Coordinate> boxesTemp = new ArrayList<>();
             if (!binLabelCentroids.isEmpty()) {
                 Centroid binLabel = binLabelCentroids.get(0);
                 Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
@@ -478,7 +481,7 @@ public class MainActivity extends Activity {
                     while (!boxCentroids.isEmpty()) {
                         Centroid box = boxCentroids.get(0);
                         if (box.getX() > bottomMarkers.get(i).getX() && box.getX() < bottomMarkers.get(i + 1).getX()) {
-                            temp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
+                            boxesTemp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
                             Log.d("Add box", box.toString());
                             boxCentroids.remove(0);
                         } else if (box.getX() < bottomMarkers.get(i).getX()) {
@@ -487,7 +490,12 @@ public class MainActivity extends Activity {
                             break;
                         }
                     }
-                    queue.add(new Bin(new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY()), temp));
+//                    Collections.sort(boxesTemp, new Comparator<Coordinate>() {
+//                        public int compare(Label d1, Label d2) {
+//                            return Double.compare(d1.getLeft(), d2.getLeft());
+//                        }
+//                    });
+                    queue.add(new Bin(new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY()), boxesTemp, height));
                 }
             } else {
                 break;
@@ -569,7 +577,8 @@ public class MainActivity extends Activity {
     private void readBarcodes() {
         Log.d("Send Coordinate", "Sent " + currentCoor.toString());
         if (currentCoor.type == Type.BOX) {
-            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+//            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+            sendData("s," + (currentCoor.x + avgLengthBox / 2) + "," + (currentCoor.y + avgHeightBox / 2) + "\n");
         } else {
             sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
         }

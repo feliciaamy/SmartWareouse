@@ -18,15 +18,19 @@ public class Bin {
     private Map<Coordinate, Barcodes> boxesBarcodes = new HashMap<>();
     private Barcodes binLabelBarcode;
 
+    private double binHeight;
+    private double occupancyLevel = 0;
+
     private int counter = 0;
 
-    public Bin(Coordinate binLabel, List<Coordinate> boxes) {
+    public Bin(Coordinate binLabel, List<Coordinate> boxes, double binHeight) {
         this.binLabel = binLabel;
         this.boxes = boxes;
+        this.binHeight = binHeight;
     }
 
-    public void setBoxesBarcodes(Map<Coordinate, List<Barcodes>> boxesBarcodes) {
-
+    public double getOccupancyLevel() {
+        return occupancyLevel;
     }
 
     public void setBinLabelBarcode(Barcodes barcode) {
