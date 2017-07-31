@@ -215,6 +215,13 @@ public class BoxDetector {
             }
         }
 
+        // Todo: Check whether the sorting is correct
+        Collections.sort(eliminatedBoxes, new Comparator<Label>() {
+            public int compare(Label d1, Label d2) {
+                return Double.compare(d1.getTop(), d2.getTop());
+            }
+        });
+
         Collections.sort(eliminatedBoxes, new Comparator<Label>() {
             public int compare(Label d1, Label d2) {
                 return Double.compare(d1.getLeft(), d2.getLeft());

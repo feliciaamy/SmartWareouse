@@ -36,6 +36,8 @@ import org.smartwarehouse.localization.Type;
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 /**
@@ -61,6 +63,9 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
 
     private Type type;
 
+    private int counter;
+    private Timer timer = new Timer("ScanditTimer");//create a new Timer
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,7 +88,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
     @Override
     protected void onPause() {
         super.onPause();
-
+        timer.cancel();
         // When the activity is in the background immediately stop the
         // scanning to save resources and free the camera.
         mBarcodePicker.stopScanning();
@@ -145,6 +150,7 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
      * Initializes and starts the MatrixScan
      */
     public void initializeAndStartBarcodeScanning() {
+        counter = 0;
         // Switch to full screen.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -193,9 +199,6 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
 
-
-//        BarcodePicker picker = new BarcodePicker(this, settings);
-
         mBarcodePicker = new BarcodePicker(this, settings);
         mBarcodePicker.applyScanSettings(settings);
         // Set the GUI style to MatrixScan to see a visualization of the tracked barcodes. If you
@@ -207,7 +210,6 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         mBarcodePicker.getOverlayView().setVibrateEnabled(false);
 
         setContentView(mBarcodePicker);
-//        mBarcodePicker = picker;
 
         // Register listener, in order to be notified about relevant events
         // (e.g. a successfully scanned bar code).
@@ -215,13 +217,34 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
 
         // Register a process frame listener to be able to reject tracked codes.
         mBarcodePicker.setProcessFrameListener(this);
+
+        TimerTask timerTask = new TimerTask() {
+
+            @Override
+            public void run() {
+                Log.d("TimerTask", "" + counter);
+                if (counter >= 5) {
+                    onPause();
+                    backToMain();
+                }
+                counter++;//increments the counter
+            }
+        };
+
+        timer.scheduleAtFixedRate(timerTask, 30, 3000);
     }
 
+    private void backToMain(){
+        Intent resultData = new Intent(this, MainActivity.class);
+        setResult(Activity.RESULT_CANCELED, resultData);
+        finish();
+    }
     @Override
     public void didScan(ScanSession session) {
         // This callback acts the same as when not tracking and can be used for the events such as
         // when a code is newly recognized. Rejecting tracked codes has to be done in didProcess().
         // number of expected barcodes
+        counter = 0;
         int numExpectedCodes = 1;
         // get all the scanned barcodes from the session
         List<Barcode> allCodes = session.getAllRecognizedCodes();
@@ -245,32 +268,8 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
             session.stopScanning();
             session.clear();
             finish();
-
-//            mHandler.sendMessage(msg);
-
         }
 
-    }
-
-    private String createMessage(List<Barcode> codes) {
-        String message = "";
-        for (Barcode code : codes) {
-            String data = code.getData();
-            // truncate code to certain length
-            String cleanData = null;
-            if (data.length() > 30) {
-                cleanData = data.substring(0, 25) + "[...]";
-            } else {
-                cleanData = data;
-            }
-            if (!message.equals("")) {
-                message += ";";
-            }
-            message += cleanData;
-//                message += "\n(" + code.getSymbologyName().toUpperCase(Locale.US) + ")";
-        }
-        Log.d("Scandit", message);
-        return message;
     }
 
     @Override
@@ -280,9 +279,6 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
                 session.rejectTrackedCode(code);
             }
         }
-
-        // If you want to implement your own visualization of the code tracking, you should update
-        // it in this callback.
     }
 
     @Override
@@ -356,4 +352,5 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
             activity.mBarcodeSplash.requestFocus();
         }
     }
+
 }

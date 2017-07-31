@@ -46,7 +46,8 @@ public class BinLabelDetector {
 //        final List<Point> potentialLabels = new ArrayList<Point>();
         final List<Float> ratio = new ArrayList<>();
         for (int i = 0; i < coordinates.size(); i++) {
-            if (Imgproc.contourArea(coordinates.get(i)) > 4500) {
+            if (Imgproc.contourArea(coordinates.get(i)) > 6000
+                    && Imgproc.contourArea(coordinates.get(i)) < 80000) {
                 Rect rect = Imgproc.boundingRect(coordinates.get(i));
 
                 float ratiod = ((float) rect.height / (float) rect.width);
@@ -60,6 +61,8 @@ public class BinLabelDetector {
                     potentialLabels.add(new Label(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height, Color.MAGENTA));
 //                    Imgproc.rectangle(ImageMat, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 20);
                 }
+            } else {
+                Log.d("BIN LABEL AREA", Imgproc.contourArea(coordinates.get(i)) + "");
             }
         }
     }
@@ -83,7 +86,7 @@ public class BinLabelDetector {
             if (isInLine(label, b)) {
                 if (label.getLeft() > l.getCenter() && label.getRight() < r.getCenter()) {
                     Log.d("Correct label", label.toString());
-                    if (!eliminatedLabels.contains(label)){
+                    if (!eliminatedLabels.contains(label)) {
                         eliminatedLabels.add(label);
                     }
                 }
@@ -135,7 +138,7 @@ public class BinLabelDetector {
 
     private static boolean isInLine(Label label, Boundary boundary) {
         double height = Math.abs(label.getTop() - label.getBottom());
-        if (Math.abs((label.getTop() + label.getBottom()) / 2 - boundary.getCenter()) < height) {
+        if (Math.abs((label.getTop() + label.getBottom()) / 2 - boundary.getCenter()) < height / 2) {
             return true;
         }
 

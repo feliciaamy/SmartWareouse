@@ -7,9 +7,9 @@ import java.text.DecimalFormat;
  */
 
 public class Coordinate {
-    Type type;
-    double x;
-    double y;
+    Type type = null;
+    double x = -1;
+    double y = -1;
 
     @Override
     public boolean equals(Object o) {
@@ -42,6 +42,9 @@ public class Coordinate {
     }
 
     public String toString() {
+        if(type==null){
+            return null;
+        }
         DecimalFormat df = new DecimalFormat("#.00");
         return type + ": " + df.format(this.x) + "," + df.format(this.y);
     }

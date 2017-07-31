@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -32,6 +33,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,13 +82,19 @@ import static android.content.ContentValues.TAG;
  */
 
 public class MainActivity extends Activity {
-    private String aisle = "AA";
-    private int partition = 0;
+    // Output
+    private List<Bin> aisleList = new ArrayList<>();
+    private String errorLog = "";
+    private String aisle = null;
+    private int startBin = -1;
+    private int endBin = -1;
+    private int level = 3;
 
     // Variable
     private final int IMAGE_HEIGHT = 2916;
     private final int IMAGE_WIDTH = 5184;
     private double height = 0;//2103;
+    private double baseHeight; // The shelf base in y axis
     private double avgLengthBox = 0;
     private double avgHeightBox = 0;
 
@@ -160,6 +168,8 @@ public class MainActivity extends Activity {
         } else {
             Log.d("Dual Axis", "is ready");
         }
+
+
         checkCameraHardware(this);
         setContentView(R.layout.camera_localization);
 
@@ -347,6 +357,8 @@ public class MainActivity extends Activity {
                 } else {
                     height = -1;
                 }
+                baseHeight = bottomBoundary.getCenter();
+
                 Log.d("Time stamp", "Finish detecting boundaries");
 
                 // Bin Labels Detection
@@ -364,10 +376,6 @@ public class MainActivity extends Activity {
                 avgLengthBox = boxDetector.getAvgEliminatedLength();
                 Log.d("Centroid", boxCentroids.size() + "");
                 Log.d("Time stamp", "Finish detecting boxes");
-
-                // Create Queue
-                queue = createQueue(bottomMarkers, binLabelCentroids, boxCentroids);
-                Log.d("Time stamp", "Finish creating queue");
 
                 // Initial Setting
                 Canvas cnvs = new Canvas(resultBitmap);
@@ -421,15 +429,23 @@ public class MainActivity extends Activity {
 //                    coordinates.add(new Coordinate(Type.BINLABEL, d.getX(), d.getY()));
                 }
 
-                cnvs.drawCircle((float) 5312 / 2, (float) 2988 / 2, (float) 100, paintFill);
-//                Log.d("TEST1", Integer.toString(resultBitmap.getHeight()) );
-//                Log.d("TEST1", Integer.toString(resultBitmap.getWidth()) );
+                cnvs.drawCircle((float) 5312 / 2, (float) 2988 / 2, (float) 20, paintFill);
+
+//                for(Centroid i : boxCentroids)
+//                    Log.d("BOXES", (i.getX() + "," + i.getY()));
+//
+//                for(Centroid i : binLabelCentroids)
+//                    Log.d("BIN", (i.getX() + "," + i.getY()));
 
                 Log.d("Time stamp", "Finish drawing");
                 Log.d("Data", data);
                 mImageView.setImageBitmap(resultBitmap);
                 Log.d("Time stamp", "Finish setting image view");
 //                storeImage(resultBitmap);
+
+                // Create Queue
+                queue = createQueue(bottomMarkers, binLabelCentroids, boxCentroids);
+                Log.d("Time stamp", "Finish creating queue");
             }
         }
         return queue;
@@ -471,36 +487,42 @@ public class MainActivity extends Activity {
         List<Bin> queue = new ArrayList<>();
 
         for (int i = 0; i < bottomMarkers.size() - 1; i++) {
+            double binWidth;
             List<Coordinate> boxesTemp = new ArrayList<>();
+            Centroid binLabel = new Centroid(-1, -1, 0, Color.BLACK);
             if (!binLabelCentroids.isEmpty()) {
-                Centroid binLabel = binLabelCentroids.get(0);
-                Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
-                Log.d("Queue Binlabel", binLabel.toString());
-                if (binLabel.getX() > bottomMarkers.get(i).getX() && binLabel.getX() < bottomMarkers.get(i + 1).getX()) {
-                    binLabelCentroids.remove(0);
-                    while (!boxCentroids.isEmpty()) {
-                        Centroid box = boxCentroids.get(0);
-                        if (box.getX() > bottomMarkers.get(i).getX() && box.getX() < bottomMarkers.get(i + 1).getX()) {
-                            boxesTemp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
-                            Log.d("Add box", box.toString());
-                            boxCentroids.remove(0);
-                        } else if (box.getX() < bottomMarkers.get(i).getX()) {
-                            boxCentroids.remove(0);
-                        } else {
-                            break;
-                        }
-                    }
-//                    Collections.sort(boxesTemp, new Comparator<Coordinate>() {
-//                        public int compare(Label d1, Label d2) {
-//                            return Double.compare(d1.getLeft(), d2.getLeft());
-//                        }
-//                    });
-                    queue.add(new Bin(new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY()), boxesTemp, height));
-                }
-            } else {
-                break;
+                binLabel = binLabelCentroids.get(0);
             }
+            binWidth = Math.abs(bottomMarkers.get(i).getX() - bottomMarkers.get(i + 1).getX());
+            Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
+            Log.d("Queue Binlabel", binLabel.toString());
+            Coordinate binCoor;
+            if (binLabel.getX() > bottomMarkers.get(i).getX() && binLabel.getX() < bottomMarkers.get(i + 1).getX()) {
+                binLabelCentroids.remove(0);
+                binCoor = new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY());
+            } else {
+                binCoor = null;
+                Date date = new Date();
+                String errorMsg = String.format("[WARNING] Missing bin label at aisle %s level %s.", aisle, level);
+                errorLog = errorLog + date + ": " + errorMsg;
+                Toast.makeText(this, "Missing bin label", Toast.LENGTH_LONG).show();
+                currentBin.addError(errorMsg);
+            }
+            while (!boxCentroids.isEmpty()) {
+                Centroid box = boxCentroids.get(0);
+                if (box.getX() > bottomMarkers.get(i).getX() && box.getX() < bottomMarkers.get(i + 1).getX()) {
+                    boxesTemp.add(new Coordinate(Type.BOX, box.getX(), box.getY()));
+                    Log.d("Add box", box.toString());
+                    boxCentroids.remove(0);
+                } else if (box.getX() < bottomMarkers.get(i).getX()) {
+                    boxCentroids.remove(0);
+                } else {
+                    break;
+                }
+            }
+            queue.add(new Bin(binCoor, boxesTemp, binWidth, height));
         }
+
 
         Log.d("Queue", "Size: " + queue.size());
         for (Bin bin : queue) {
@@ -520,7 +542,7 @@ public class MainActivity extends Activity {
             }
 
             // Read bin label
-            if (currentBin.getBinLabelBarcode() == null) {
+            if (currentBin.getBinLabelBarcode() == null && currentBin.getBinLabelCoordinate() != null) {
                 currentCoor = currentBin.getBinLabelCoordinate();
                 readBarcodes();
             } else if (currentBin.hasNext()) {
@@ -535,12 +557,15 @@ public class MainActivity extends Activity {
             }
         } else {
             Log.d("Read Barcode", "Finish reading");
+            Log.d("Output", toJson());
+
+            // Resetting
+            startBin = -1;
+            endBin = -1;
+            aisle = null;
             currentBin = null;
             currentCoor = null;
-
             startScanning();
-            Log.d("Output", toJson());
-            partition++;
         }
     }
 
@@ -553,17 +578,34 @@ public class MainActivity extends Activity {
     private boolean isPrinterReady() {
         // Zeroing 3D printer
         if (height == -1) {
+            // Move cart
+            // Move the le down to 0
             sendData("l0,\n");
             height = 0;
+            // for now give output
+            Log.d("Output", "End of aisle");
+            Log.d("Output", toJson());
+
+        } else {
+            sendData(String.format("le,%s\n", height / 71.5));
+            while (!receiveMessage().equals("4")) {
+//                return false;
+            }
+
+            Log.d("Bluetooth", "LE moved to " + height / 71.5);
+
         }
-        sendData("z," + 0 + "," + (height * 1) + "\n");
-        if (!receiveMessage().equals("1")) {
-            return false;
+        if (height == 0) {
+            sendData(String.format("z,%s,%s\n", 0, 0));
+            while (!receiveMessage().equals("1")) {
+//                return false;
+            }
         }
+
 //         Centering 3D printer
         sendData("c,\n");
-        if (!receiveMessage().equals("1")) {
-            return false;
+        while (!receiveMessage().equals("1")) {
+//            return false;
         }
         return true;
     }
@@ -575,23 +617,27 @@ public class MainActivity extends Activity {
      * @see BarcodeScanner
      */
     private void readBarcodes() {
-        Log.d("Send Coordinate", "Sent " + currentCoor.toString());
-        if (currentCoor.type == Type.BOX) {
-//            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
-            sendData("s," + (currentCoor.x + avgLengthBox / 2) + "," + (currentCoor.y + avgHeightBox / 2) + "\n");
+        if (currentCoor == null) {
+            queueing();
         } else {
-            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+            Log.d("Send Coordinate", "Sent " + currentCoor.toString());
+            if (currentCoor.type == Type.BOX) {
+//            sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+                sendData("s," + (currentCoor.x + avgLengthBox / 2 + 125) + "," + (currentCoor.y + avgHeightBox / 2 - 125) + "\n");
+            } else {
+                sendData("s," + currentCoor.x + "," + currentCoor.y + "\n");
+            }
+
+            // Wait until the dual axis finish positioning
+            while (!receiveMessage().equals("2")) {
+            }
+
+            // GO TO SCANDIT ACTIVITY
+            Intent intent = new Intent(this, BarcodeScanner.class);
+            intent.putExtra("type", currentCoor.type.toString());
+
+            startActivityForResult(intent, GET_BARCODE);
         }
-
-        // Wait until the dual axis finish positioning
-        while (!receiveMessage().equals("2")) {
-        }
-
-        // GO TO SCANDIT ACTIVITY
-        Intent intent = new Intent(this, BarcodeScanner.class);
-        intent.putExtra("type", currentCoor.type.toString());
-
-        startActivityForResult(intent, GET_BARCODE);
     }
 
     /**
@@ -603,16 +649,66 @@ public class MainActivity extends Activity {
      */
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent data) {
+        Barcodes barcodeList = new Barcodes(currentCoor.type);
         if (requestCode == GET_BARCODE) {
             if (resultCode == RESULT_OK) {
                 String barcodes = data.getStringExtra("barcodes");
                 Log.d("BARCODE", barcodes);
-                Barcodes barcodeList = new Barcodes(currentCoor.type);
                 if (currentCoor.type == Type.BINLABEL) {
+                    Date date = new Date();
+                    String pattern = "^([A-Z])\\w\\d+\\-(\\d+)\\-(\\d+)";
+                    Pattern r = Pattern.compile(pattern);
+
+                    Matcher m = r.matcher(barcodes);
+                    if (m.find()) {
+                        if (aisle == null) {
+                            aisle = m.group(1);
+                        } else if (!m.group(1).equals(aisle)) {
+                            String errorMsg = String.format("[WARNING] The aisle in the bin label is inconsistent " +
+                                    "with the aisle name at aisle %s level %s.", aisle, level);
+                            errorLog = errorLog + date + ": " + errorMsg;
+                            Toast.makeText(this, "Wrong aisle name", Toast.LENGTH_LONG).show();
+                            currentBin.addError(errorMsg);
+                        }
+
+                        if (level == -1) {
+                            level = Integer.parseInt(m.group(2));
+                        } else if (Integer.parseInt(m.group(2)) != level) {
+                            String errorMsg = String.format("[WARNING] The level in the bin label is inconsistent " +
+                                    "with the current level at aisle %s level %s.", aisle, level);
+                            errorLog = errorLog + date + ": " + errorMsg;
+                            Toast.makeText(this, "Wrong level", Toast.LENGTH_LONG).show();
+                            currentBin.addError(errorMsg);
+                        }
+
+                        if (startBin == -1) {
+                            startBin = Integer.parseInt(m.group(3));
+                            endBin = startBin;
+                        } else if (Integer.parseInt(m.group(2)) != endBin + 1) {
+                            String errorMsg = String.format("[WARNING] The bin number in the bin label is not in order " +
+                                    "at aisle %s level %s.", aisle, level);
+                            errorLog = errorLog + date + ": " + errorMsg;
+                            Toast.makeText(this, "Wrong bin order", Toast.LENGTH_LONG).show();
+                            currentBin.addError(errorMsg);
+                            endBin++;
+                        } else {
+                            endBin++;
+                        }
+                    }
+
                     barcodeList.setBarcode(barcodes);
                     currentBin.setBinLabelBarcode(barcodeList);
                 } else {
                     // Regex for barcode
+                    try {
+                        byte[] b = barcodes.getBytes("UTF-8");
+                        barcodes = new String(b, "US-ASCII");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    Log.d("BARCODE", barcodes);
+                    barcodes = barcodes.replaceAll("[^\\x0A\\x0D\\x20-\\x7E]", "");
+
                     String pattern = "(\\BX9\\d+)(\\B1T1E\\d+\\w+)(\\B9D\\d+)(\\BQ\\d+)(\\B1PSP\\d+)";
                     Pattern r = Pattern.compile(pattern);
 
@@ -623,31 +719,38 @@ public class MainActivity extends Activity {
                         barcodeList.setD9(m.group(3));
                         barcodeList.setQ(m.group(4));
                         barcodeList.setP(m.group(5));
+                    } else {
+                        barcodeList.setX(barcodes.substring(5, 14));
+                        barcodeList.setT(barcodes.substring(14, 27));
+                        barcodeList.setD9(barcodes.substring(27, 33));
+                        barcodeList.setQ(barcodes.substring(33, 37));
+                        barcodeList.setP(barcodes.substring(37, 50));
                     }
                     Log.d("Barcode result", barcodeList.toString());
-                    currentBin.mapBoxes(currentCoor, barcodeList);
+//                    currentBin.mapBoxes(currentCoor, barcodeList);
                 }
                 Log.d("Coordinate, barcodes", currentCoor.toString() + ", " + barcodes);
 
-//                result.put(currentCoor, barcodeList);
                 // Finish shaking
                 while (!receiveMessage().equals("3")) {
                 }
-                queueing();
-//                new Handler().postDelayed(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        try {
-//                            queueing();
-//                        } catch (Exception e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                }, 2000);
-
             } else {
                 Log.e("SCANDIT INTENT", "NO RETURN");
+                Date date = new Date();
+                String errorMsg = String.format("[ERROR] Cannot read the label " +
+                        "at aisle %s level %s.", aisle, level);
+                errorLog = errorLog + date + ": " + errorMsg;
+                Toast.makeText(this, "Cannot read barcode", Toast.LENGTH_LONG).show();
+                currentBin.addError(errorMsg);
             }
+            if (currentCoor.type == Type.BINLABEL) {
+                currentBin.setBinLabelBarcode(barcodeList);
+            } else{
+                currentBin.mapBoxes(currentCoor, barcodeList);
+            }
+            queueing();
+        } else {
+            Log.e("VERY WRONG HERE", "AFKAJDFJA ;DJKF ;OIAJSDO ;FJA;ODIJF A");
         }
     }
 
@@ -837,38 +940,13 @@ public class MainActivity extends Activity {
     }
 
     private String toJson() {
-//        "{\n" +
-//                "\t\"aisle\": {\n" +
-//                "\t\t\"name\": \"AA\",\n" +
-//                "\t\t\"partition\": 0,\n" +
-//                "\t\t\"bins\": [{\n" +
-//                "\t\t\t\"name\": \"DG78-02-04\",\n" +
-//                "\t\t\t\"occupancy_level\": \"26%\",\n" +
-//                "\t\t\t\"items\": [{\n" +
-//                "\t\t\t\t\t\"1T\": \"1T1E603266A08\",\n" +
-//                "\t\t\t\t\t\"1P\": \"1PSP000237784\",\n" +
-//                "\t\t\t\t\t\"9D\": \"9D1621\",\n" +
-//                "\t\t\t\t\t\"Q\": \"Q2500\",\n" +
-//                "\t\t\t\t\t\"X\": \"X98819768\",\n" +
-//                "\t\t\t\t\t\"13D\": \"13D16211621\"\n" +
-//                "\t\t\t\t},\n" +
-//                "\t\t\t\t{\n" +
-//                "\t\t\t\t\t\"1T\": \"1T1E603266A08\",\n" +
-//                "\t\t\t\t\t\"1P\": \"1PSP000237784\",\n" +
-//                "\t\t\t\t\t\"9D\": \"9D1621\",\n" +
-//                "\t\t\t\t\t\"Q\": \"Q2500\",\n" +
-//                "\t\t\t\t\t\"X\": \"X98819768\",\n" +
-//                "\t\t\t\t\t\"13D\": \"13D16211621\"\n" +
-//                "\t\t\t\t}\n" +
-//                "\t\t\t]\n" +
-//                "\t\t}]\n" +
-//                "\t}\n" +
-//                "}"
-        String output = String.format("{\n" +
-                "\t\"aisle\": {\n" +
-                "\t\t\"name\": \"%s\",\n" +
-                "\t\t\"partition\": %s,\n" +
-                "\t\t\"bins\": [", aisle, partition);
+        String output = String.format("{" +
+                "\"aisle\": {" +
+                "\"name\": \"%s\"," +
+                "\"level\": \"%s\"," +
+                "\"first bin number\": %s," +
+                "\"last bin number\": %s," +
+                "\"bins\": [", aisle, level, startBin, endBin);
         boolean firstBin = true;
         for (Bin bin : result) {
             if (!firstBin) {
@@ -877,9 +955,9 @@ public class MainActivity extends Activity {
                 firstBin = false;
             }
             output = output + String.format(
-                    "{\t\t\t\"name\": \"%s\",\n" +
-                            "\t\t\t\"occupancy_level\": \"26%\",\n" +
-                            "\t\t\t\"items\": [\n", bin.getBinLabelBarcode());
+                    "{\"name\": \"%s\"," +
+                            "\"occupancy_level\": \"%s\"," +
+                            "\"items\": [", bin.getBinLabelBarcode(), bin.getOccupancyLevel());
 
             boolean firstBox = true;
             for (Map.Entry<Coordinate, Barcodes> entry : bin.getBoxesBarcodes().entrySet()) {
@@ -890,16 +968,17 @@ public class MainActivity extends Activity {
                 }
                 Barcodes box = entry.getValue();
                 output = output + String.format(
-                        "{\t\t\t\t\t\"1T\": \"%s\",\n" +
-                                "\t\t\t\t\t\"1P\": \"%s\",\n" +
-                                "\t\t\t\t\t\"9D\": \"%s\",\n" +
-                                "\t\t\t\t\t\"Q\": \"%s\",\n" +
-                                "\t\t\t\t\t\"X\": \"%s\",\n" +
+                        "{\"1T\": \"%s\"," +
+                                "\"1P\": \"%s\"," +
+                                "\"9D\": \"%s\"," +
+                                "\"Q\": \"%s\"," +
+                                "\"X\": \"%s\"" +
 //                                "\t\t\t\t\t\"13D\": \"%s\"\n" +
                                 "}", box.getT(), box.getP(), box.getD9(), box.getQ(), box.getX());
             }
-            output = output + "]}}";
+            output = output + String.format("], \"errors\": \"%s\"}", bin.getError());
         }
+        output = output + "]}}";
         return output;
     }
 }

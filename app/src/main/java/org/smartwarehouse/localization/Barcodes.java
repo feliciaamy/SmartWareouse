@@ -6,10 +6,14 @@ package org.smartwarehouse.localization;
 
 class Barcodes {
     // Box
-    private String T, P, D9, Q, X;
+    private String T = "";
+    private String P = "";
+    private String D9 = "";
+    private String Q = "";
+    private String X = "";
 
     // Bin label
-    private String barcode;
+    private String barcode = "";
 
     private Type type;
 
