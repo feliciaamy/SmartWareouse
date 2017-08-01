@@ -88,7 +88,7 @@ public class MainActivity extends Activity {
     private String aisle = null;
     private int startBin = -1;
     private int endBin = -1;
-    private int level = 3;
+    private int level = 1;
 
     // Variable
     private final int IMAGE_HEIGHT = 2916;
@@ -165,6 +165,7 @@ public class MainActivity extends Activity {
     private void startScanning() {
         if (!isPrinterReady()) {
             Log.e("Dual Axis", "is not set");
+            return;
         } else {
             Log.d("Dual Axis", "is ready");
         }
@@ -501,6 +502,7 @@ public class MainActivity extends Activity {
                 binLabelCentroids.remove(0);
                 binCoor = new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY());
             } else {
+                //Todo this won't work because there is no currentBin yet
                 binCoor = null;
                 Date date = new Date();
                 String errorMsg = String.format("[WARNING] Missing bin label at aisle %s level %s.", aisle, level);
@@ -520,7 +522,7 @@ public class MainActivity extends Activity {
                     break;
                 }
             }
-            queue.add(new Bin(binCoor, boxesTemp, binWidth, height));
+            queue.add(new Bin(binCoor, boxesTemp, binWidth, height, level));
         }
 
 
@@ -557,7 +559,7 @@ public class MainActivity extends Activity {
             }
         } else {
             Log.d("Read Barcode", "Finish reading");
-            Log.d("Output", toJson());
+//            Log.d("Output", toJson());
 
             // Resetting
             startBin = -1;
@@ -566,6 +568,7 @@ public class MainActivity extends Activity {
             currentBin = null;
             currentCoor = null;
             startScanning();
+            level++;
         }
     }
 
@@ -581,11 +584,10 @@ public class MainActivity extends Activity {
             // Move cart
             // Move the le down to 0
             sendData("l0,\n");
-            height = 0;
             // for now give output
             Log.d("Output", "End of aisle");
             Log.d("Output", toJson());
-
+            return false;
         } else {
             sendData(String.format("le,%s\n", height / 71.5));
             while (!receiveMessage().equals("4")) {
@@ -606,6 +608,10 @@ public class MainActivity extends Activity {
         sendData("c,\n");
         while (!receiveMessage().equals("1")) {
 //            return false;
+        }
+        //todo probably need to replace this
+        if (height == -1) {
+            height = 0;
         }
         return true;
     }
@@ -745,7 +751,7 @@ public class MainActivity extends Activity {
             }
             if (currentCoor.type == Type.BINLABEL) {
                 currentBin.setBinLabelBarcode(barcodeList);
-            } else{
+            } else {
                 currentBin.mapBoxes(currentCoor, barcodeList);
             }
             queueing();
@@ -943,10 +949,7 @@ public class MainActivity extends Activity {
         String output = String.format("{" +
                 "\"aisle\": {" +
                 "\"name\": \"%s\"," +
-                "\"level\": \"%s\"," +
-                "\"first bin number\": %s," +
-                "\"last bin number\": %s," +
-                "\"bins\": [", aisle, level, startBin, endBin);
+                "\"bins\": [", aisle);
         boolean firstBin = true;
         for (Bin bin : result) {
             if (!firstBin) {
@@ -956,8 +959,9 @@ public class MainActivity extends Activity {
             }
             output = output + String.format(
                     "{\"name\": \"%s\"," +
-                            "\"occupancy_level\": \"%s\"," +
-                            "\"items\": [", bin.getBinLabelBarcode(), bin.getOccupancyLevel());
+                            "\"occupancy_level\": \"%s\"%s," +
+                            "\"level\": \"%s\"," +
+                            "\"items\": [", bin.getBinLabelBarcode(), bin.getOccupancyLevel(), "%", bin.getLevel());
 
             boolean firstBox = true;
             for (Map.Entry<Coordinate, Barcodes> entry : bin.getBoxesBarcodes().entrySet()) {

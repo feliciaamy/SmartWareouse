@@ -50,8 +50,6 @@ public class Overall_Interface extends ActionBarActivity {
         setContentView(R.layout.overall_interface);
 
         //call the widgtes
-        Motor = (Button) findViewById(R.id.button2);
-        LinearElevator = (Button) findViewById(R.id.button3);
         btnDis = (Button) findViewById(R.id.button4);
         Scanning = (Button) findViewById(R.id.button5);
 

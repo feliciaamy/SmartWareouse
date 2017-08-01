@@ -20,6 +20,7 @@ public class Bin {
     private List<Coordinate> boxes = null;
     private Map<Coordinate, Barcodes> boxesBarcodes = new HashMap<>();
     private Barcodes binLabelBarcode = null;
+    private int level = 0;
 
     private double binWidth;
     private double binHeight;
@@ -33,10 +34,11 @@ public class Bin {
 
     private int counter = 0;
 
-    public Bin(Coordinate binLabel, List<Coordinate> boxes, double binWidth, double binHeight) {
+    public Bin(Coordinate binLabel, List<Coordinate> boxes, double binWidth, double binHeight, int level) {
         if (binLabel == null) {
             error = "[ERROR] Missing bin label";
         }
+        this.level = level;
         this.binLabel = binLabel;
         this.boxes = boxes;
         this.binHeight = binHeight;
@@ -80,6 +82,9 @@ public class Bin {
         if (stackAreas.size() != 0) {
             double heightCm = binHeight / HEIGHT_TO_CM;
             double widthCm = binWidth / WIDTH_TO_CM;
+            if (binHeight == -1){
+                heightCm = 32;
+            }
             occupancyLevel = Math.round((occupiedArea / (heightCm * widthCm)) * 100);
         }
         return occupancyLevel;
@@ -146,5 +151,9 @@ public class Bin {
             error = error + "; ";
         }
         error = error + newError;
+    }
+
+    public int getLevel(){
+        return level;
     }
 }

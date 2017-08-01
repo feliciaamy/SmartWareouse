@@ -164,6 +164,10 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         ScanSettings settings = ScanSettings.create();
         // if they match an already decoded barcode in the session
 //        settings.setRelativeZoom(0.9f);
+//        Log.d("Scandit", settings.getAreaSettingsLandscape().toString());
+        settings.setActiveScanningArea(ScanSettings.ORIENTATION_LANDSCAPE, new RectF(0.2f, 0.2f, 0.8f, 0.8f));
+        Log.d("Scandit", settings.getActiveScanningArea(ScanSettings.ORIENTATION_LANDSCAPE).toString());
+        Log.d("Scandit", settings.getActiveScanningArea(ScanSettings.ORIENTATION_PORTRAIT).toString());
         settings.setCodeDuplicateFilter(0);
 
 //        settings.setMicroDataMatrixEnabled();
@@ -232,13 +236,15 @@ public class BarcodeScanner extends Activity implements OnScanListener, ProcessF
         };
 
         timer.scheduleAtFixedRate(timerTask, 30, 3000);
+
     }
 
-    private void backToMain(){
+    private void backToMain() {
         Intent resultData = new Intent(this, MainActivity.class);
         setResult(Activity.RESULT_CANCELED, resultData);
         finish();
     }
+
     @Override
     public void didScan(ScanSession session) {
         // This callback acts the same as when not tracking and can be used for the events such as
