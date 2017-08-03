@@ -204,9 +204,9 @@ public class BoxDetector {
         double totLength = 0;
         double totHeight = 0;
         for (Label box : boxes) {
-            if (!(box.getArea() < areaEps + avgArea && box.getArea() > avgArea - areaEps)) {
-                continue;
-            }
+//            if (!(box.getArea() < areaEps + avgArea && box.getArea() > avgArea - areaEps)) {
+//                continue;
+//            }
             if (topBoundary.getCenter() - eps < box.getTop() && bottomBoundary.getCenter() + eps > box.getBottom()
                     && leftBoundary.getCenter() - eps < box.getLeft() && rightBoundary.getCenter() + eps > box.getRight()) {
                 eliminatedBoxes.add(box);

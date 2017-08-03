@@ -28,12 +28,15 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +63,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static android.R.attr.bitmap;
 import static android.content.ContentValues.TAG;
 
 /**
@@ -85,7 +89,7 @@ public class MainActivity extends Activity {
     // Output
     private List<Bin> aisleList = new ArrayList<>();
     private String errorLog = "";
-    private String aisle = null;
+    private String aisle = "D";
     private int startBin = -1;
     private int endBin = -1;
     private int level = 1;
@@ -163,11 +167,11 @@ public class MainActivity extends Activity {
      * @return Nothing.
      */
     private void startScanning() {
-        if (!isPrinterReady()) {
-            Log.e("Dual Axis", "is not set");
+        if (!isMachineReady()) {
+            Log.e("Machine", "is not set");
             return;
         } else {
-            Log.d("Dual Axis", "is ready");
+            Log.d("Machine", "is ready");
         }
 
 
@@ -495,7 +499,7 @@ public class MainActivity extends Activity {
                 binLabel = binLabelCentroids.get(0);
             }
             binWidth = Math.abs(bottomMarkers.get(i).getX() - bottomMarkers.get(i + 1).getX());
-            Log.d("Queue bottom markers", bottomMarkers.get(i).toString() + "; " + bottomMarkers.get(i + 1).toString());
+            Log.d("Queue bottom markers", i + " and " + i + 1);
             Log.d("Queue Binlabel", binLabel.toString());
             Coordinate binCoor;
             if (binLabel.getX() > bottomMarkers.get(i).getX() && binLabel.getX() < bottomMarkers.get(i + 1).getX()) {
@@ -503,12 +507,8 @@ public class MainActivity extends Activity {
                 binCoor = new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY());
             } else {
                 //Todo this won't work because there is no currentBin yet
+                Log.e("Queue", "OMG");
                 binCoor = null;
-                Date date = new Date();
-                String errorMsg = String.format("[WARNING] Missing bin label at aisle %s level %s.", aisle, level);
-                errorLog = errorLog + date + ": " + errorMsg;
-                Toast.makeText(this, "Missing bin label", Toast.LENGTH_LONG).show();
-                currentBin.addError(errorMsg);
             }
             while (!boxCentroids.isEmpty()) {
                 Centroid box = boxCentroids.get(0);
@@ -522,7 +522,18 @@ public class MainActivity extends Activity {
                     break;
                 }
             }
-            queue.add(new Bin(binCoor, boxesTemp, binWidth, height, level));
+
+            Bin tempBin = new Bin(binCoor, boxesTemp, binWidth, height, level);
+            if (binCoor == null) {
+                Date date = new Date();
+                String errorMsg = String.format("[WARNING] Missing bin label at aisle %s level %s.", aisle, level);
+                errorLog = errorLog + date + ": " + errorMsg;
+                Toast.makeText(this, "Missing bin label", Toast.LENGTH_LONG).show();
+                tempBin.addError(errorMsg);
+            }
+            if ((binCoor != null && !boxesTemp.isEmpty()) || binCoor != null) {
+                queue.add(tempBin);
+            }
         }
 
 
@@ -578,20 +589,30 @@ public class MainActivity extends Activity {
      *
      * @return boolean
      */
-    private boolean isPrinterReady() {
+    private boolean isMachineReady() {
         // Zeroing 3D printer
+        if (height == 0) {
+            sendData("m0,\n");
+            while (!receiveMessage().equals("f")) {
+                // Wait until the cart find the stop marker
+            }
+        }
         if (height == -1) {
             // Move cart
             // Move the le down to 0
             sendData("l0,\n");
             // for now give output
             Log.d("Output", "End of aisle");
-            Log.d("Output", toJson());
+            String json = toJson();
+            Log.d("Output", json);
+            String html = toHtml();
+            Log.d("Output", html);
+            height = 0;
+            startScanning();
             return false;
         } else {
             sendData(String.format("le,%s\n", height / 71.5));
             while (!receiveMessage().equals("4")) {
-//                return false;
             }
 
             Log.d("Bluetooth", "LE moved to " + height / 71.5);
@@ -667,6 +688,7 @@ public class MainActivity extends Activity {
 
                     Matcher m = r.matcher(barcodes);
                     if (m.find()) {
+                        Log.d("Barcodes", m.group(1));
                         if (aisle == null) {
                             aisle = m.group(1);
                         } else if (!m.group(1).equals(aisle)) {
@@ -959,9 +981,9 @@ public class MainActivity extends Activity {
             }
             output = output + String.format(
                     "{\"name\": \"%s\"," +
-                            "\"occupancy_level\": \"%s\"%s," +
+                            "\"occupancy_level\": \"%s%%\"," +
                             "\"level\": \"%s\"," +
-                            "\"items\": [", bin.getBinLabelBarcode(), bin.getOccupancyLevel(), "%", bin.getLevel());
+                            "\"items\": [", bin.getBinLabelBarcode(), bin.getOccupancyLevel(), bin.getLevel());
 
             boolean firstBox = true;
             for (Map.Entry<Coordinate, Barcodes> entry : bin.getBoxesBarcodes().entrySet()) {
@@ -983,6 +1005,98 @@ public class MainActivity extends Activity {
             output = output + String.format("], \"errors\": \"%s\"}", bin.getError());
         }
         output = output + "]}}";
+        try {
+            Date date = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            File file = new File("/storage/emulated/0/Pictures/shelves/Aisle" + aisle + "-" + dateFormat.format(date) + ".json");
+            Log.d("Output", file.toString());
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+            bw.write(output);
+            bw.close();
+        } catch (FileNotFoundException e) {
+            Log.e("Output", e.toString());
+        } catch (IOException e) {
+            Log.e("Output", e.toString());
+        }
+        return output;
+    }
+
+    private String toHtml() {
+        Date date = new Date();
+        String output = String.format("<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "<meta charset=\"utf-8\"/>\n" +
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/jquery.dynatable.css\">\n" +
+                "<script src=\"js/jquery-1.7.2.min.js\" type=\"text/javascript\"></script>\n" +
+                "<script src=\"js/jquery.dynatable.js\" type=\"text/javascript\"></script>\n" +
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/tablestyle.css\">\n" +
+                "\n" +
+                "<script src=\"js/script.js\"></script>\n" +
+                "<h2>%s</h2>\n" +
+                "<h3>%s</h3><table>\n" +
+                "<thead>\n" +
+                "  <tr>\n" +
+                "    <th rowspan=\"2\">Name</th>\n" +
+                "    <th rowspan=\"2\", colspan = \"1\">Occupancy Level</th>\n" +
+                "    <th rowspan=\"2\">Level</th>\n" +
+                "    <th rowspan=\"2\">Errors</th>\n" +
+                "    <th rowspan=\"2\">Link</th>\n" +
+                "    <th colspan = \"5\">Item\n" +
+                "      <tr>\n" +
+                "        <th>1T</th>\n" +
+                "        <th>1P</th>\n" +
+                "        <th>9D</th>\n" +
+                "        <th>Q</th>\n" +
+                "        <th>X</th>\n" +
+                "      </tr>\n" +
+                "    </th>\n" +
+                "  </tr>\n" +
+                "</thead>\n" +
+                "<tbody>", "Aisle " + aisle, new SimpleDateFormat("yy/mm/dd").format(date));
+        boolean firstBin = true;
+        for (Bin bin : result) {
+            int totalBoxes = bin.getBoxesBarcodes().size();
+            if (totalBoxes == 0) {
+                totalBoxes = 1;
+            }
+            output = output + String.format(
+                    "<tr>\n" +
+                            "      <td rowspan= \"%s\">%s</td>\n" +
+                            "      <td rowspan= \"%s\">%s %%</td>\n" +
+                            "      <td rowspan= \"%s\">%s</td>\n" +
+                            "      <td rowspan= \"%s\">%s</td>\n" +
+                            "      <td rowspan= \"%s\",class = \"link\"><img src=\"%s\"></td>\n",
+                    totalBoxes, bin.getBinLabelBarcode(), totalBoxes, bin.getOccupancyLevel(), totalBoxes, bin.getLevel(),
+                    totalBoxes, bin.getError(), totalBoxes, lastPictureTaken.getName());
+
+            for (Map.Entry<Coordinate, Barcodes> entry : bin.getBoxesBarcodes().entrySet()) {
+                Barcodes box = entry.getValue();
+                output = output + String.format(
+                        "<td>%s</td>\n" +
+                                "<td>%s</td>\n" +
+                                "<td>%s</td>\n" +
+                                "<td>%s</td>\n" +
+                                "<td>%s</td>\n",
+                        box.getT(), box.getP(), box.getD9(), box.getQ(), box.getX());
+            }
+            output = output + "</tr>";
+        }
+        output = output + "</tbody>\n" +
+                "</table>\n" +
+                "</html>";
+
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            File file = new File("/storage/emulated/0/Pictures/shelves/Aisle" + aisle + "-" + dateFormat.format(date) + ".html");
+            Log.d("Output", file.toString());
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+            bw.write(output);
+            bw.close();
+        } catch (FileNotFoundException e) {
+            Log.e("Output", e.toString());
+        } catch (IOException e) {
+            Log.e("Output", e.toString());
+        }
         return output;
     }
 }

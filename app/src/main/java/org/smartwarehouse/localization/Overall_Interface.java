@@ -25,7 +25,7 @@ import java.util.UUID;
 
 public class Overall_Interface extends ActionBarActivity {
 
-    Button Motor, LinearElevator, Scanning, btnDis;
+    Button Scanning, btnDis;
     private int yCoor = 1458;
     int M_state = 0;
     int LE_state = 0;
@@ -57,47 +57,6 @@ public class Overall_Interface extends ActionBarActivity {
         new ConnectBT().execute(); //Call the class to connect
 
         //commands to be sent to bluetooth
-        Motor.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                yCoor += 100;
-                send_message("s,2592," + yCoor + "\n");
-
-//                if (M_state == 0){
-//                    send_message("m0,\n");
-//                    Motor.setText("Stop Motor");
-//                    Motor.setBackgroundColor(Color.RED);
-//                    M_state = 1;
-//                }
-//                else{
-//                    send_message("m1,\n");
-//                    Motor.setText("Start Motor");
-//                    Motor.setBackgroundColor(Color.GREEN);
-//                    M_state = 0;
-//                }
-            }
-        });
-
-        LinearElevator.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                yCoor -= 100;
-                send_message("s,2592," + yCoor + "\n");
-//                if (LE_state == 0){
-//                    send_message("l0,\n");
-//                    LinearElevator.setText("Stop Linear Elevator");
-//                    LinearElevator.setBackgroundColor(Color.RED);
-//                    LE_state = 1;
-//                }
-//                else{
-//                    send_message("l1,\n");
-//                    LinearElevator.setText("Start Linear Elevator");
-//                    LinearElevator.setBackgroundColor(Color.GREEN);
-//                    LE_state = 0;
-//                }
-            }
-        });
-
         Scanning.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

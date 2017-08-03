@@ -21,8 +21,8 @@ import java.util.List;
 
 public class BoundaryDetector {
     // Colours
-    private final Scalar LOWERTHRESHOLD = new Scalar(110, 100, 100); // Dull Red color – lower hsv values
-    private final Scalar UPPERTHRESHOLD = new Scalar(120, 255, 255); // Dull Red color – higher hsv values
+    private final Scalar LOWERTHRESHOLD = new Scalar(115, 50, 100); // Dull Red color – lower hsv values
+    private final Scalar UPPERTHRESHOLD = new Scalar(125, 255, 255); // Dull Red color – higher hsv values
 
     // Mats
     private Mat mHsv = new Mat();
