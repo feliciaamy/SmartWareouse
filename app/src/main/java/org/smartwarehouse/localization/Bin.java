@@ -6,6 +6,7 @@ import com.scandit.recognition.Barcode;
 
 import org.opencv.core.Core;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,7 @@ public class Bin {
     private Map<Coordinate, Barcodes> boxesBarcodes = new HashMap<>();
     private Barcodes binLabelBarcode = null;
     private int level = 0;
+    private File imageLink;
 
     private double binWidth;
     private double binHeight;
@@ -34,7 +36,7 @@ public class Bin {
 
     private int counter = 0;
 
-    public Bin(Coordinate binLabel, List<Coordinate> boxes, double binWidth, double binHeight, int level) {
+    public Bin(Coordinate binLabel, List<Coordinate> boxes, double binWidth, double binHeight, int level, File imageLink) {
         if (binLabel == null) {
             error = "[ERROR] Missing bin label";
         }
@@ -43,6 +45,7 @@ public class Bin {
         this.boxes = boxes;
         this.binHeight = binHeight;
         this.binWidth = binWidth;
+        this.imageLink = imageLink;
     }
 
     public double getOccupancyLevel() {
@@ -155,5 +158,9 @@ public class Bin {
 
     public int getLevel(){
         return level;
+    }
+
+    public File getImageLink(){
+        return imageLink;
     }
 }

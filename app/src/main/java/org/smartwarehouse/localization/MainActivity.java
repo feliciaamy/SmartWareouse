@@ -59,6 +59,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,6 +88,10 @@ import static android.content.ContentValues.TAG;
  */
 
 public class MainActivity extends Activity {
+    // Safety
+    private Timer timer = new Timer("SafetyTimer");
+    private boolean pause = false;
+    private boolean waiting = false;
     // Output
     private List<Bin> aisleList = new ArrayList<>();
     private String errorLog = "";
@@ -93,6 +99,7 @@ public class MainActivity extends Activity {
     private int startBin = -1;
     private int endBin = -1;
     private int level = 1;
+    private int partition = 1;
 
     // Variable
     private final int IMAGE_HEIGHT = 2916;
@@ -157,6 +164,20 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        TimerTask timerTask = new TimerTask() {
+
+            @Override
+            public void run() {
+                if (!waiting) {
+                    if (receiveMessage().contains("8")) {
+                        Log.d("PAUSE", "!!!!!!");
+                        pause = true;
+                    }
+                }
+            }
+        };
+
+        timer.scheduleAtFixedRate(timerTask, 30, 3000);
         startScanning();
     }
 
@@ -506,8 +527,6 @@ public class MainActivity extends Activity {
                 binLabelCentroids.remove(0);
                 binCoor = new Coordinate(Type.BINLABEL, binLabel.getX(), binLabel.getY());
             } else {
-                //Todo this won't work because there is no currentBin yet
-                Log.e("Queue", "OMG");
                 binCoor = null;
             }
             while (!boxCentroids.isEmpty()) {
@@ -523,7 +542,7 @@ public class MainActivity extends Activity {
                 }
             }
 
-            Bin tempBin = new Bin(binCoor, boxesTemp, binWidth, height, level);
+            Bin tempBin = new Bin(binCoor, boxesTemp, binWidth, height, level, lastPictureTaken);
             if (binCoor == null) {
                 Date date = new Date();
                 String errorMsg = String.format("[WARNING] Missing bin label at aisle %s level %s.", aisle, level);
@@ -531,11 +550,10 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "Missing bin label", Toast.LENGTH_LONG).show();
                 tempBin.addError(errorMsg);
             }
-            if ((binCoor != null && !boxesTemp.isEmpty()) || binCoor != null) {
+            if ((binCoor == null && !boxesTemp.isEmpty()) || binCoor != null) {
                 queue.add(tempBin);
             }
         }
-
 
         Log.d("Queue", "Size: " + queue.size());
         for (Bin bin : queue) {
@@ -548,7 +566,18 @@ public class MainActivity extends Activity {
      * A method to arrange the order of labels to be scanned.
      */
     private void queueing() {
-        if (!queue.isEmpty() || currentBin != null) {
+        if (pause) {
+            Date date = new Date();
+            String errorMsg = String.format("[WARNING] The process is terminated due to a detected object " +
+                    "during the scanning at aisle %s level %s.", aisle, level);
+            errorLog = errorLog + date + ": " + errorMsg;
+            Toast.makeText(this, "The scanning is terminated", Toast.LENGTH_LONG).show();
+            if (currentBin != null) {
+                currentBin.addError(errorMsg);
+            }
+            finishScanning();
+            sendData("m1,\n"); // cart run away lol
+        } else if (!queue.isEmpty() || currentBin != null) {
             if (currentBin == null) {
                 currentBin = queue.get(0);
                 queue.remove(0);
@@ -575,12 +604,25 @@ public class MainActivity extends Activity {
             // Resetting
             startBin = -1;
             endBin = -1;
-            aisle = null;
             currentBin = null;
             currentCoor = null;
             startScanning();
             level++;
+            Log.d("Level", "Finish reading " + level);
         }
+    }
+
+    private void finishScanning() {
+        sendData("l0,\n");
+        // for now give output
+        Log.d("Output", "End of aisle");
+        String json = toJson();
+        Log.d("Output", json);
+        String html = toHtml();
+        Log.d("Output", html);
+        height = 0;
+        level = 0;
+        pause = false;
     }
 
     /**
@@ -592,44 +634,45 @@ public class MainActivity extends Activity {
     private boolean isMachineReady() {
         // Zeroing 3D printer
         if (height == 0) {
-            sendData("m0,\n");
-            while (!receiveMessage().equals("f")) {
-                // Wait until the cart find the stop marker
-            }
+//            sendData("m0,\n");
+//            waiting = true;
+//            String msg = "";
+//            while (!(msg = receiveMessage()).contains("f") && !msg.contains("8")) {
+//                if(msg.contains("8")){
+//                    pause = true;
+//                    break;
+//                }
+//            }
+//            waiting = false;
         }
         if (height == -1) {
-            // Move cart
-            // Move the le down to 0
-            sendData("l0,\n");
-            // for now give output
-            Log.d("Output", "End of aisle");
-            String json = toJson();
-            Log.d("Output", json);
-            String html = toHtml();
-            Log.d("Output", html);
-            height = 0;
+            finishScanning();
             startScanning();
             return false;
         } else {
             sendData(String.format("le,%s\n", height / 71.5));
-            while (!receiveMessage().equals("4")) {
+            waiting = true;
+            while (!receiveMessage().contains("4")) {
             }
+            waiting = true;
 
             Log.d("Bluetooth", "LE moved to " + height / 71.5);
 
         }
         if (height == 0) {
             sendData(String.format("z,%s,%s\n", 0, 0));
-            while (!receiveMessage().equals("1")) {
-//                return false;
+            waiting = true;
+            while (!receiveMessage().contains("1")) {
             }
+            waiting = true;
         }
 
 //         Centering 3D printer
         sendData("c,\n");
-        while (!receiveMessage().equals("1")) {
-//            return false;
+        waiting = true;
+        while (!receiveMessage().contains("1")) {
         }
+        waiting = true;
         //todo probably need to replace this
         if (height == -1) {
             height = 0;
@@ -656,8 +699,10 @@ public class MainActivity extends Activity {
             }
 
             // Wait until the dual axis finish positioning
-            while (!receiveMessage().equals("2")) {
+            waiting = true;
+            while (!receiveMessage().contains("2")) {
             }
+            waiting = true;
 
             // GO TO SCANDIT ACTIVITY
             Intent intent = new Intent(this, BarcodeScanner.class);
@@ -712,7 +757,7 @@ public class MainActivity extends Activity {
                         if (startBin == -1) {
                             startBin = Integer.parseInt(m.group(3));
                             endBin = startBin;
-                        } else if (Integer.parseInt(m.group(2)) != endBin + 1) {
+                        } else if (Integer.parseInt(m.group(3)) != endBin + 1) {
                             String errorMsg = String.format("[WARNING] The bin number in the bin label is not in order " +
                                     "at aisle %s level %s.", aisle, level);
                             errorLog = errorLog + date + ": " + errorMsg;
@@ -760,8 +805,10 @@ public class MainActivity extends Activity {
                 Log.d("Coordinate, barcodes", currentCoor.toString() + ", " + barcodes);
 
                 // Finish shaking
-                while (!receiveMessage().equals("3")) {
+                waiting = true;
+                while (!receiveMessage().contains("3")) {
                 }
+                waiting = true;
             } else {
                 Log.e("SCANDIT INTENT", "NO RETURN");
                 Date date = new Date();
@@ -1026,10 +1073,7 @@ public class MainActivity extends Activity {
         String output = String.format("<!DOCTYPE html>\n" +
                 "<html>\n" +
                 "<meta charset=\"utf-8\"/>\n" +
-                "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/jquery.dynatable.css\">\n" +
-                "<script src=\"js/jquery-1.7.2.min.js\" type=\"text/javascript\"></script>\n" +
-                "<script src=\"js/jquery.dynatable.js\" type=\"text/javascript\"></script>\n" +
-                "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/tablestyle.css\">\n" +
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"tablestyle.css\">\n" +
                 "\n" +
                 "<script src=\"js/script.js\"></script>\n" +
                 "<h2>%s</h2>\n" +
@@ -1052,7 +1096,7 @@ public class MainActivity extends Activity {
                 "    </th>\n" +
                 "  </tr>\n" +
                 "</thead>\n" +
-                "<tbody>", "Aisle " + aisle, new SimpleDateFormat("yy/mm/dd").format(date));
+                "<tbody>", "Aisle " + aisle, new SimpleDateFormat("yy/mm/dd (hh:mm)").format(date));
         boolean firstBin = true;
         for (Bin bin : result) {
             int totalBoxes = bin.getBoxesBarcodes().size();
@@ -1067,7 +1111,7 @@ public class MainActivity extends Activity {
                             "      <td rowspan= \"%s\">%s</td>\n" +
                             "      <td rowspan= \"%s\",class = \"link\"><img src=\"%s\"></td>\n",
                     totalBoxes, bin.getBinLabelBarcode(), totalBoxes, bin.getOccupancyLevel(), totalBoxes, bin.getLevel(),
-                    totalBoxes, bin.getError(), totalBoxes, lastPictureTaken.getName());
+                    totalBoxes, bin.getError(), totalBoxes, bin.getImageLink().getName());
 
             for (Map.Entry<Coordinate, Barcodes> entry : bin.getBoxesBarcodes().entrySet()) {
                 Barcodes box = entry.getValue();
@@ -1076,7 +1120,7 @@ public class MainActivity extends Activity {
                                 "<td>%s</td>\n" +
                                 "<td>%s</td>\n" +
                                 "<td>%s</td>\n" +
-                                "<td>%s</td>\n",
+                                "<td>%s</td>\n</tr>",
                         box.getT(), box.getP(), box.getD9(), box.getQ(), box.getX());
             }
             output = output + "</tr>";
@@ -1086,7 +1130,8 @@ public class MainActivity extends Activity {
                 "</html>";
 
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yy-mm-dd(hh:mm)");
+            Log.d("Html", dateFormat.format(date));
             File file = new File("/storage/emulated/0/Pictures/shelves/Aisle" + aisle + "-" + dateFormat.format(date) + ".html");
             Log.d("Output", file.toString());
             BufferedWriter bw = new BufferedWriter(new FileWriter(file));
